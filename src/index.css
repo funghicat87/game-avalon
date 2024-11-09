@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Neuton:ital,wght@0,200;0,300;0,400;0,700;0,800;1,400&family=Zen+Old+Mincho&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Zen+Old+Mincho&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bokor&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components{
+  .background {
+    @apply w-full h-screen bg-Black bg-Background bg-no-repeat bg-[center_top_6rem]
+  }
+}
+.dropShadowWhite {
+  @apply drop-shadow-[0_0px_5px_#ffffff]
+}
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow:0 0 0 50px #212121 inset; 
+  -webkit-text-fill-color: #FFFFFF;
+}
+.borderGradient {
+  position: relative; 
+  border-image-slice: 1;
+  border-image-source: linear-gradient(-30deg, #666666, #8D8D8D, #575757, #929292, #484848);
+}
+
+.borderGradient::after {
+  content: '';
+  position: absolute;
+  top: -1.8px;
+  left: -120%;
+  width: 20%;
+  height: calc(100% + 3.6px); 
+  border-top: 1.8px solid ;
+  border-bottom: 1.8px solid ;
+  border-image-slice: 1;  
+  border-image-source: linear-gradient(to right, #ffffff00, #ffffffb2, #ffffff00); 
+  transform: skewX(-30deg);
+}
+
+.borderGradient:hover::after {
+  animation: slide 1s ;
+}
+
+@keyframes slide {
+  to {
+    left: 150%;
+  }
+}
+
+.borderGradientFrame {
+  border-image: conic-gradient(#737272, #B0B0B0, #4E4D4D, #787878, #B7B7B7, #727272, #5B5B5B, #ADADAD, #575757, #5C5C5C, #C0C0C0, #595959, #737272) 1;
+}
+
+::selection {
+	background: #929292;
+}
