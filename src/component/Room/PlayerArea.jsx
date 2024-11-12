@@ -3,8 +3,8 @@ import { CardFlat } from './CardFlat'
 import { useDispatch } from 'react-redux'
 import { gameActions } from '../../features/gameSlice'
 import { getDisplayRole, getRoleSide } from '../../utils/MappingImage'
-import agree from '@/assets/gameboard/VoteingAgree.png'
-import disagree from '@/assets/gameboard/VoteingDisagree.png'
+import agree from '@/assets/gameboard/VoteingAgree.webp'
+import disagree from '@/assets/gameboard/VoteingDisagree.webp'
 
 // name: "",
 // role: "",

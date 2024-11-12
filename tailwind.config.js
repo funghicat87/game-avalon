@@ -10,7 +10,7 @@ export default {
         White: '#FFFFFF'
       },
       backgroundImage: {
-        Background: 'url("/background.png")'
+        Background: 'url("/background.webp")'
       },
       fontFamily: {
         ZenOldMincho: ['Zen Old Mincho', 'serif'],

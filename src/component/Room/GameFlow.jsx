@@ -1,5 +1,5 @@
-import GameFlowStartImg from '../../assets/gameboard/GameFlowStart.png'
-import GameFlowImg from '../../assets/gameboard/GameFlow.png'
+import GameFlowStartImg from '../../assets/gameboard/GameFlowStart.webp'
+import GameFlowImg from '../../assets/gameboard/GameFlow.webp'
 
 const GameFlowStart = ({ content, className }) => {
   return (

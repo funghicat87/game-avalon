@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useLocation, useNavigate } from 'react-router-dom'
-import Knife from '@/assets/gameboard/Knife.png'
-import Shield from '@/assets/icon/card-icon-shield.png'
-import Drip from '../assets/icon/card-icon-drip.png'
+import Knife from '@/assets/gameboard/Knife.webp'
+import Shield from '@/assets/icon/card-icon-shield.webp'
+import Drip from '../assets/icon/card-icon-drip.webp'
 import Background from '@/component/Background'
 import { Card } from '@/component/Room/Card'
 import Chat from '@/component/Room/Chat'
@@ -16,8 +16,8 @@ import SettingArea from '@/component/Room/SettingArea'
 import { gameActions } from '@/features/gameSlice'
 import { useGameActions } from '@/hooks/useGameActions'
 import { RoleImageMappingTable } from '@/utils/MappingImage'
-import agree from '@/assets/gameboard/VoteingAgree.png'
-import disagree from '@/assets/gameboard/VoteingDisagree.png'
+import agree from '@/assets/gameboard/VoteingAgree.webp'
+import disagree from '@/assets/gameboard/VoteingDisagree.webp'
 
 const RoomFront = () => {
   const dispatch = useDispatch()

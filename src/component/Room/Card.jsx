@@ -1,10 +1,10 @@
 /* eslint-disable react/prop-types */
-import cardIconCrowm from '../../assets/icon/card-icon-crown.png'
-import cardIconDrip from '../../assets/icon/card-icon-drip.png'
-import cardIconNodrip from '../../assets/icon/card-icon-nodrip.png'
-import cardIconShield from '../../assets/icon/card-icon-shield.png'
-import cardFrame from '../../assets/role/card-frame.png'
-import Knife from '../../assets/gameboard/Knife.png'
+import cardIconCrowm from '../../assets/icon/card-icon-crown.webp'
+import cardIconDrip from '../../assets/icon/card-icon-drip.webp'
+import cardIconNodrip from '../../assets/icon/card-icon-nodrip.webp'
+import cardIconShield from '../../assets/icon/card-icon-shield.webp'
+import cardFrame from '../../assets/role/card-frame.webp'
+import Knife from '../../assets/gameboard/Knife.webp'
 import { useState } from 'react'
 import Button from '../Button'
 

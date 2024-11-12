@@ -1,6 +1,6 @@
-import TaskFrameBlue from '../../assets/gameboard/TaskFrameBlue.png'
-import TaskFrameRed from '../../assets/gameboard/TaskFrameRed.png'
-import TaskFrameWhite from '../../assets/gameboard/TaskFrameWhite.png'
+import TaskFrameBlue from '../../assets/gameboard/TaskFrameBlue.webp'
+import TaskFrameRed from '../../assets/gameboard/TaskFrameRed.webp'
+import TaskFrameWhite from '../../assets/gameboard/TaskFrameWhite.webp'
 
 const Task = ({ task, win, numberPeople, now, needTwo }) => {
   const getImageSrc = () => {

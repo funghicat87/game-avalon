@@ -1,6 +1,6 @@
 import React from 'react'
-import VoteRecordOff from '../../assets/gameboard/VoteRecordOff.png'
-import VoteRecordOn from '../../assets/gameboard/VoteRecordOn.png'
+import VoteRecordOff from '../../assets/gameboard/VoteRecordOff.webp'
+import VoteRecordOn from '../../assets/gameboard/VoteRecordOn.webp'
 
 const VoteRecordArea = ({ records }) => {
   return (
