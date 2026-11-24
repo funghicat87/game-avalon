@@ -1,68 +1,13 @@
-export const getRoleImgPair = (number) => {
-  let rolesImgPair
-  if (number === '5') {
-    rolesImgPair = {
-      Merlin: 'Merlin',
-      Percival: 'Percival',
-      LoyalServant: 'LoyalServant',
-      Morgana: 'Morgana',
-      Assassin: 'Assassin'
-    }
-  } else if (number === '6') {
-    rolesImgPair = {
-      Merlin: 'Merlin',
-      Percival: 'Percival',
-      LoyalServant: 'LoyalServant',
-      LoyalServantB: 'LoyalServant',
-      Morgana: 'Morgana',
-      Assassin: 'Assassin'
-    }
-  } else if (number === '7') {
-    rolesImgPair = {
-      Merlin: 'Merlin',
-      Percival: 'Percival',
-      LoyalServant: 'LoyalServant',
-      LoyalServantB: 'LoyalServant',
-      Morgana: 'Morgana',
-      Assassin: 'Assassin',
-      Mordred: 'Oberon'
-    }
-  } else if (number === '8') {
-    rolesImgPair = {
-      Merlin: 'Merlin',
-      Percival: 'Percival',
-      LoyalServant: 'LoyalServant',
-      LoyalServantB: 'LoyalServant',
-      LoyalServantC: 'LoyalServant',
-      Morgana: 'Morgana',
-      Assassin: 'Assassin',
-      MinionA: 'Minion'
-    }
-  } else if (number === '9') {
-    rolesImgPair = {
-      Merlin: 'Merlin',
-      Percival: 'Percival',
-      LoyalServant: 'LoyalServant',
-      LoyalServantB: 'LoyalServant',
-      LoyalServantC: 'LoyalServant',
-      LoyalServantD: 'LoyalServant',
-      Morgana: 'Morgana',
-      Assassin: 'Assassin',
-      Mordred: 'Mordred'
-    }
-  } else if (number === '10') {
-    rolesImgPair = {
-      Merlin: 'Merlin',
-      Percival: 'Percival',
-      LoyalServant: 'LoyalServant',
-      LoyalServantB: 'LoyalServant',
-      LoyalServantC: 'LoyalServant',
-      LoyalServantD: 'LoyalServant',
-      Morgana: 'Morgana',
-      Assassin: 'Assassin',
-      Mordred: 'Mordred',
-      Oberon: 'Oberon'
-    }
-  }
-  return rolesImgPair
+/** 卡圖 key（例如 LoyalServantB、MinionA）對應到遊戲中的角色 */
+export const imageKeyToRole = (imageKey) => {
+  if (imageKey.startsWith('LoyalServant')) return 'LoyalServant'
+  if (imageKey.startsWith('Minion')) return 'Minion'
+  return imageKey
 }
+
+/** 由卡圖 key 列表產生送給伺服器的 { 卡圖key: 角色 } */
+export const buildRoleImgPair = (imageKeys) => Object.fromEntries(imageKeys.map((key) => [key, imageKeyToRole(key)]))
+
+export const EVIL_ROLES = ['Morgana', 'Assassin', 'Mordred', 'Oberon', 'Minion']
+
+export const isEvilRole = (role) => EVIL_ROLES.includes(role)

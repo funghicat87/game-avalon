@@ -1,70 +1,38 @@
 /* eslint-disable react/prop-types */
 import { CardFlat } from './CardFlat'
-import { useDispatch } from 'react-redux'
-import { gameActions } from '../../features/gameSlice'
-import { getDisplayRole, getRoleSide } from '../../utils/MappingImage'
-import agree from '@/assets/gameboard/VoteingAgree.webp'
-import disagree from '@/assets/gameboard/VoteingDisagree.webp'
+import { getDisplayRole, getRevealedRole, getRoleSide, voteImage } from '../../utils/MappingImage'
 
-// name: "",
-// role: "",
-// roleImg: "",
-// isHuman: false,
-// isOwner: false,
-// selected: false,
-// hadLady: false
-// findMerlin: false, ??
-// VoteResult: null,
+const PlayerArea = ({ players, userName, currentStatus, selectable, onSelect }) => {
+  const me = players.find((player) => player.name === userName)
+  // 用湖中女神查驗過的對象，可以看到他的陣營
+  const ladyTargetName = me?.hadLady ? players[me.hadLadyIdx]?.name : null
 
-const PlayerArea = ({ players, userName, currentStatus }) => {
-  const dispatch = useDispatch()
-  const myRole = players.find((player) => player.name === userName)?.role
-  const playerWithLady = players.find((player) => player.name === userName && player.hadLady)
-  const targetName = playerWithLady ? players[playerWithLady.hadLadyIdx].name : null
-
-  const handleBlockClick = (playerName, userName) => {
-    dispatch(gameActions.setSelectedPlayer({ playerName, userName }))
+  const getCardImg = (player) => {
+    if (currentStatus === 'END') return getRevealedRole(player)
+    if (player.name === ladyTargetName) return getRoleSide(player)
+    return getDisplayRole(player, me?.role)
   }
 
   return (
     <div className="flex flex-row w-full lg:w-[950px] flex-wrap-reverse items-center justify-center gap-2 lg:gap-3">
       {players
         .filter((player) => player.name !== userName)
-        .map((player, index) => {
-          if (targetName === player.name) {
-            return (
-              <CardFlat
-                key={index}
-                userName={player.name}
-                cardImg={getRoleSide(player)}
-                center={player.isAgree === 1 ? agree : player.isAgree === 0 ? disagree : null}
-                onClick={() => handleBlockClick(player.name, userName)}
-                selected={player.selected}
-                hasLady={player.hasLady}
-                hadLady={player.hadLady}
-                isLeader={player.isLeader}
-                isTeamMember={player.isTeamMember}
-                currentStatus={currentStatus}
-              />
-            )
-          } else {
-            return (
-              <CardFlat
-                key={index}
-                userName={player.name}
-                cardImg={getDisplayRole(player, myRole)}
-                center={player.isAgree === 1 ? agree : player.isAgree === 0 ? disagree : null}
-                onClick={() => handleBlockClick(player.name, userName)}
-                selected={player.selected}
-                hasLady={player.hasLady}
-                hadLady={player.hadLady}
-                isLeader={player.isLeader}
-                isTeamMember={player.isTeamMember}
-                currentStatus={currentStatus}
-              />
-            )
-          }
-        })}
+        .map((player) => (
+          <CardFlat
+            key={player.name}
+            userName={player.name}
+            cardImg={getCardImg(player)}
+            center={voteImage(player.isAgree)}
+            onClick={() => onSelect(player.name)}
+            selectable={selectable}
+            selected={player.selected}
+            hasLady={player.hasLady}
+            hadLady={player.hadLady}
+            isLeader={player.isLeader}
+            isTeamMember={player.isTeamMember}
+            currentStatus={currentStatus}
+          />
+        ))}
     </div>
   )
 }

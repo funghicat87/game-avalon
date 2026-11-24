@@ -1,11 +1,8 @@
 import { PlayerModel } from "./player.js"
-import { Socket } from 'socket.io'
-
-export interface SocketClientsModel {
-  [key: string] : Socket
-}
 
 export interface RoomModel {
+  id: string,
+  ownerId: string,
   password: string,
   number: number,
   enableLady: boolean,
@@ -15,14 +12,4 @@ export interface RoomModel {
 
 export interface RoomsModel {
   [key: string] : RoomModel
-}
-
-export function initRoomModel(): RoomModel {
-  return {
-    password: '',
-    number: 5,
-    enableLady: false,
-    roleImgPair: {},
-    players: []
-  }
 }

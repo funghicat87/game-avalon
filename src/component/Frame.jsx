@@ -1,4 +1,3 @@
-import React from 'react'
 import UpperLeft from '../assets/frame/upper_left.svg'
 import UpperRight from '../assets/frame/upper_right.svg'
 import LowerRight from '../assets/frame/lower_right.svg'

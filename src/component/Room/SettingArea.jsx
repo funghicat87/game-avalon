@@ -1,129 +1,73 @@
 import { useState } from 'react'
-import { useForm, FormProvider } from 'react-hook-form'
-import Button from '../../component/Button'
-import axios from 'axios'
-import { origin } from '../../config/setting'
 import { useDispatch } from 'react-redux'
+import Button from '../../component/Button'
+import { post } from '../../utils/api'
 
-const SettingArea = ({ roomId, players, state }) => {
-  const methods = useForm()
-
+const SettingArea = ({ roomId, players, people, isOwner }) => {
   const dispatch = useDispatch()
-  const [changeSetting, setChangeSetting] = useState(false)
-  const handleChangeSetting = () => {
-    setChangeSetting(!changeSetting)
-  }
+  const [errorMsg, setErrorMsg] = useState('')
+  const [copied, setCopied] = useState(false)
+  const isFull = people ? players.length >= people : false
 
   const handleGameStart = () => {
-    // 檢查人數是否足夠
-    if (players.length < state.people) {
-      alert('人數不夠')
+    if (!isFull) {
+      setErrorMsg(`人數不夠（${players.length}/${people}）`)
       return
     }
-    dispatch({
-      type: 'sendGameStatus',
-      payload: {
-        gameType: 'GAMESTART',
-        roomId: roomId
-      }
-    })
+    setErrorMsg('')
+    dispatch({ type: 'sendGameStatus', payload: { gameType: 'GAMESTART', roomId } })
   }
 
-  const handleAddComputer = () => {
-    axios
-      .post(`${origin}/addComputer`, {
-        roomId: roomId
-      })
-      .then((res) => {
-        console.debug(res)
-        // console.log(res)
-      })
-      .catch((error) => {
-        console.error(error)
-      })
+  const callApi = async (path) => {
+    setErrorMsg('')
+    try {
+      await post(path, { roomId })
+    } catch (error) {
+      setErrorMsg(error.message)
+    }
   }
 
-  const handleRemoveComputer = () => {
-    axios
-      .post(`${origin}/removeComputer`, {
-        roomId: roomId
-      })
-      .then((res) => {
-        console.log(res)
-      })
-      .catch((error) => {
-        console.error(error)
-      })
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(roomId)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // 非 https 環境無法使用剪貼簿，忽略
+    }
   }
 
   return (
-    <FormProvider {...methods}>
-      <div className="text-White flex justify-center gap-36 w-full lg:w-auto">
-        {/* <div className="flex flex-col gap-10">
-          <InputNumberRadio label="玩家人數" name="PlayerNumber" />
-          <InputCheckbox label="湖中女神" name="LadyLake" />
-          <div>
-            <Label name="CharacterPool">角色池</Label>
-            <div className="flex flex-row ">
-              <div className="flex flex-col gap-1">
-                <InputRadio
-                  label="預設"
-                  id="Default"
-                  name="CharacterPool"
-                  validation={{ required: { value: true, message: '此欄必填' } }}
-                />
-                <InputRadio
-                  label="自選"
-                  id="Choose"
-                  name="CharacterPool"
-                  validation={{ required: { value: true, message: '此欄必填' } }}
-                />
-              </div>
-              <div className="flex flex-row gap-1 ml-3">
-                <img src={cardMinionOfMordredA} alt="card" className="w-10" />
-                <img src={cardMinionOfMordredA} alt="card" className="w-10" />
-                <img src={cardMinionOfMordredA} alt="card" className="w-10" />
-                <img src={cardMinionOfMordredA} alt="card" className="w-10" />
-                <img src={cardMinionOfMordredA} alt="card" className="w-10" />
-                <img src={cardMinionOfMordredA} alt="card" className="w-10" />
-                <img src={cardMinionOfMordredA} alt="card" className="w-10" />
-                <img src={cardMinionOfMordredA} alt="card" className="w-10" />
-                <img src={cardMinionOfMordredA} alt="card" className="w-10" />
-                <img src={cardMinionOfMordredA} alt="card" className="w-10" />
-              </div>
-            </div>
-          </div>
-        </div> */}
-        <div className="flex flex-row w-full max-w-96 lg:w-96 justify-end items-end gap-2 ">
-          {changeSetting || (
-            <>
-              {/* <Button mt="mt-0" onClick={handleChangeSetting}>
-                變更
-              </Button> */}
-              <Button mt="mt-0" onClick={handleGameStart}>
-                開始
-              </Button>
-              <Button mt="mt-0" onClick={handleAddComputer}>
-                加入電腦
-              </Button>
-              <Button mt="mt-0" onClick={handleRemoveComputer}>
-                刪除電腦
-              </Button>
-            </>
-          )}
-          {changeSetting && (
-            <>
-              <Button mt="mt-0" onClick={handleChangeSetting}>
-                儲存
-              </Button>
-              <Button mt="mt-0" onClick={handleChangeSetting}>
-                取消
-              </Button>
-            </>
-          )}
-        </div>
+    <div className="text-White flex flex-col items-center gap-2 w-full max-w-96 lg:w-96">
+      <div className="flex items-center gap-3 text-lg tracking-widest">
+        <span>
+          房間號碼 <span className="dropShadowWhite">{roomId}</span>
+        </span>
+        <button type="button" className="text-sm text-LightGray hover:text-White underline" onClick={handleCopy}>
+          {copied ? '已複製' : '複製'}
+        </button>
       </div>
-    </FormProvider>
+      <p className="text-sm text-LightGray">
+        玩家 {players.length}/{people ?? '?'}
+        {!isOwner && '，等待房主開始遊戲'}
+      </p>
+      <div className="flex flex-row w-full justify-end items-end gap-2">
+        {isOwner && (
+          <>
+            <Button mt="mt-0" onClick={handleGameStart} disabled={!isFull}>
+              開始
+            </Button>
+            <Button mt="mt-0" onClick={() => callApi('/addComputer')} disabled={isFull}>
+              加入電腦
+            </Button>
+            <Button mt="mt-0" onClick={() => callApi('/removeComputer')}>
+              刪除電腦
+            </Button>
+          </>
+        )}
+      </div>
+      {errorMsg && <p className="text-red-500 text-sm">{errorMsg}</p>}
+    </div>
   )
 }
 

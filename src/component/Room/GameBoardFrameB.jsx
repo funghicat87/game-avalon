@@ -1,5 +1,6 @@
 import Frame from '../Frame'
 import Button from '../Button'
+import Title from '../Title'
 import VoteingAgree from '../../assets/gameboard/VoteingAgree.webp'
 import VoteingDisagree from '../../assets/gameboard/VoteingDisagree.webp'
 import TaskSuccessful from '../../assets/gameboard/TaskSuccessful.webp'
@@ -9,7 +10,7 @@ import { gameActions } from '../../features/gameSlice'
 import { useForm, FormProvider } from 'react-hook-form'
 
 // eslint-disable-next-line react/prop-types
-const GameBoardFrameB = ({ content, roomId, name, status, validation, isBlueSide = false }) => {
+const GameBoardFrameB = ({ content, title, roomId, name, status, validation, isBlueSide = false }) => {
   const dispatch = useDispatch()
   const images = {
     Voteing: [VoteingAgree, VoteingDisagree],
@@ -33,7 +34,6 @@ const GameBoardFrameB = ({ content, roomId, name, status, validation, isBlueSide
   }
 
   const handleAgreeForMission = (result) => {
-    console.log({ [name]: result })
     dispatch({
       type: 'sendGameStatus',
       payload: {
@@ -66,10 +66,11 @@ const GameBoardFrameB = ({ content, roomId, name, status, validation, isBlueSide
   }
 
   return (
-    <div className="fixed inset-x-0 top-1/2 -translate-y-1/2 z-50 flex justify-center px-4 lg:absolute lg:inset-x-auto lg:px-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-Black/60 lg:absolute lg:inset-auto lg:bg-transparent lg:px-0">
       <Frame width="w-full md:w-[600px]">
         <FormProvider {...methods}>
           <form onSubmit={handleSubmit(onSubmit)}>
+            {title && <Title mb="mb-4">{title}</Title>}
             <div className="flex flex-wrap justify-center gap-3">
               {image1 && (
                 <label htmlFor="image1">

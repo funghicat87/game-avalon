@@ -1,11 +1,10 @@
 import express, { json } from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import path from 'path'
 import { createServer } from 'http'
 import { Server as HttpServer } from 'http'
-import { RoomManager } from './managers/room.js'
 import SocketIOManager from './managers/websocket.js'
-import { GameManager } from './managers/game.js'
 import router from './routes/room.js'
 
 /**********************************************************
@@ -33,20 +32,19 @@ const server: HttpServer = createServer(app)
 
 
 /**********************************************************
- * 物件
- */
-const roomManager = RoomManager.getInstance();
-const gameManager = GameManager.getInstance();
-
-/**********************************************************
  * 註冊物件
  */
-const socketIOManager = new SocketIOManager(server, ioConfig);
+new SocketIOManager(server, ioConfig);
 
 /**********************************************************
  * 註冊路由
  */
 app.use('/', router);
+
+// SPA fallback：直接開啟或重新整理 /Room/xxx 等前端路由時回傳 index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.resolve('dist/client/index.html'));
+});
 
 /**********************************************************
  * 啟動伺服器

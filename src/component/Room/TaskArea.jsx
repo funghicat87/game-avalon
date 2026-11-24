@@ -25,26 +25,34 @@ const Task = ({ task, win, numberPeople, now, needTwo }) => {
   return (
     <div
       className={`relative ${
-        now ? 'w-20 h-20 sm:w-32 sm:h-32 lg:w-52 lg:h-52' : 'w-16 h-16 sm:w-28 sm:h-28 lg:w-44 lg:h-44'
+        now
+          ? 'w-16 h-16 min-[400px]:w-20 min-[400px]:h-20 sm:w-32 sm:h-32 lg:w-52 lg:h-52'
+          : 'w-[52px] h-[52px] min-[400px]:w-16 min-[400px]:h-16 sm:w-28 sm:h-28 lg:w-44 lg:h-44'
       }`}
     >
       <span
         className={`${getTextColorClass()} font-Roboto absolute left-1/2 transform -translate-x-1/2 flex items-center justify-center whitespace-nowrap ${getDropShadowClass()} font-thin tracking-wider ${
-          now ? 'text-[8px] sm:text-[10px] lg:text-[12px] top-[26%] lg:top-16' : 'text-[7px] sm:text-[9px] lg:text-[10px] top-[24%] lg:top-12'
+          now
+            ? 'text-[8px] sm:text-[10px] lg:text-[12px] top-[26%] lg:top-16'
+            : 'text-[7px] sm:text-[9px] lg:text-[10px] top-[24%] lg:top-12'
         }`}
       >
         Task {task}
       </span>
       <span
         className={`${getTextColorClass()} absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 lg:translate-y-0 flex items-center justify-center ${getDropShadowClass()} ${
-          now ? 'text-2xl sm:text-4xl lg:text-5xl top-1/2 lg:top-[80px]' : 'text-xl sm:text-3xl lg:text-4xl top-1/2 lg:top-[66px]'
+          now
+            ? 'text-xl min-[400px]:text-2xl sm:text-4xl lg:text-5xl top-1/2 lg:top-[80px]'
+            : 'text-lg min-[400px]:text-xl sm:text-3xl lg:text-4xl top-1/2 lg:top-[66px]'
         }`}
       >
         {numberPeople}
       </span>
       <span
         className={`${getTextColorClass()} absolute left-1/2 transform -translate-x-1/2 flex items-center justify-center whitespace-nowrap ${getDropShadowClass()} ${
-          now ? 'text-[8px] sm:text-[10px] lg:text-[11px] bottom-[24%] lg:bottom-[60px]' : 'text-[7px] sm:text-[9px] lg:text-[10px] bottom-[22%] lg:bottom-[50px]'
+          now
+            ? 'text-[8px] sm:text-[10px] lg:text-[11px] bottom-[24%] lg:bottom-[60px]'
+            : 'text-[7px] sm:text-[9px] lg:text-[10px] bottom-[22%] lg:bottom-[50px]'
         } ${needTwo ? '' : 'hidden'}`}
       >
         兩張失敗

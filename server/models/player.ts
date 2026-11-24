@@ -1,4 +1,5 @@
 export interface PlayerModel {
+  id: string,          // 玩家的 clientId（電腦玩家為 AI-xxx）
   name: string,
   role: string,
   roleImg: string,
@@ -13,11 +14,12 @@ export interface PlayerModel {
   isAgree: number
 }
 
-export function initPlayerModel(): PlayerModel {
+export function initPlayerModel(overrides: Partial<PlayerModel> = {}): PlayerModel {
   return {
+    id: "",
     name: "",
     role: "",
-    roleImg: "",
+    roleImg: "Back",
     isHuman: false,
     isOwner: false,
     selected: false,
@@ -26,6 +28,7 @@ export function initPlayerModel(): PlayerModel {
     hadLadyIdx: -1,
     isLeader: false,
     isTeamMember: false,
-    isAgree: -1
+    isAgree: -1,
+    ...overrides
   }
 }

@@ -32,6 +32,9 @@ import HalfMerlinMorgana from '@/assets/role/card-flat-Half.webp'
 import Red from '@/assets/role/card-flat-Red.webp'
 import Blue from '@/assets/role/card-flat-Blue.webp'
 
+import { isEvilRole } from './game'
+import agree from '@/assets/gameboard/VoteingAgree.webp'
+import disagree from '@/assets/gameboard/VoteingDisagree.webp'
 import cardBack from '@/assets/role/card-back.webp'
 import cardBackFlat from '@/assets/role/card-flat-Back.webp'
 
@@ -112,12 +115,16 @@ export const getRoleSide = (player) => {
   // 如果沒有角色資訊，返回背面
   if (!player.role) return FlatRoleImageMappingTable['Back']
 
-  if (['Mordred', 'Morgana', 'Assassin', 'Minion'].includes(player.role)) {
+  if (isEvilRole(player.role)) {
     return FlatRoleImageMappingTable['Red']
   }
   // 其他情況
   return FlatRoleImageMappingTable['Blue']
 }
+
+/** 遊戲結束後公開所有人的角色卡 */
+export const getRevealedRole = (player) =>
+  FlatRoleImageMappingTable[player.roleImg] || FlatRoleImageMappingTable['Back']
 
 export const getDefaultRoleImg = (number) => {
   if (number === 5) {
@@ -167,3 +174,6 @@ export const isBlueSide = (role) => {
     'LoyalServantE'
   ].includes(role)
 }
+
+/** 玩家卡片中間顯示的投票結果圖 */
+export const voteImage = (isAgree) => (isAgree === 1 ? agree : isAgree === 0 ? disagree : null)

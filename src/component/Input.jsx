@@ -1,4 +1,3 @@
-import React from 'react'
 import { useFormContext } from 'react-hook-form'
 
 const Label = ({ name, children, className, mb }) => {
@@ -9,7 +8,7 @@ const Label = ({ name, children, className, mb }) => {
   )
 }
 
-const InputText = ({ label, name, validation }) => {
+const InputText = ({ label, name, validation, inputMode }) => {
   const {
     register,
     formState: { errors }
@@ -22,6 +21,8 @@ const InputText = ({ label, name, validation }) => {
         type="text"
         id={name}
         name={name}
+        inputMode={inputMode}
+        autoComplete="off"
         className="bg-Gray px-5 py-2 focus:outline-none"
         {...register(name, validation)}
       />
@@ -44,9 +45,7 @@ const InputNumberRadio = ({ name, label, validation, onChange }) => {
                 id={i + 5}
                 value={i + 5}
                 name={name}
-                {...register(name, {
-                  onChange: onChange
-                })}
+                {...register(name, { ...validation, onChange })}
                 className='mt-1 before:content[""] peer appearance-none before:block before:h-3 before:w-3 before:rounded-full before:bg-LightGray checked:before:bg-White checked:before:drop-shadow-[0_0px_5px_White] hover:before:drop-shadow-[0_0px_5px_LightGray]'
               />
               <span className="relative text-sm text-LightGray peer-checked:text-White peer-checked:drop-shadow-[0_0px_5px_White] peer-hover:drop-shadow-[0_0px_5px_LightGray]">

@@ -1,66 +1,31 @@
-import { useState, useEffect } from 'react'
 import GameFlow from './GameFlow'
 import TaskArea from './TaskArea'
 import VoteRecordArea from './VoteRecordArea'
 
+const STAGE_BY_STATUS = {
+  SELECTTEAM: 0,
+  VOTE: 1,
+  VOTEFORMISSION: 2,
+  LADY: 3
+}
+
 const GameBoardFront = ({ children, gameboard }) => {
-  const [staege, setStage] = useState(0)
-  const [tasksData, setTasksData] = useState([])
-  const [records, setRecords] = useState([])
+  const stage = STAGE_BY_STATUS[gameboard.currentStatus] ?? -1
 
-  // const tasksData = [
-  //   { win: "red", numberPeople: '3' },
-  //   { win: "blue", numberPeople: '3' },
-  //   { win: "red", numberPeople: '4' },
-  //   { win: "red", numberPeople: '5', needTwo: true, now: true },
-  //   { win: "white", numberPeople: '5' }
-  // ];
+  const tasks = Object.values(gameboard.history ?? {}).map((ele) => ({
+    win: ele.mission.results === null ? 'white' : ele.mission.results ? 'blue' : 'red',
+    numberPeople: ele.mission.teamSize,
+    needTwo: ele.mission.failureCondition >= 2,
+    now: ele.mission.id === gameboard.currentMission?.id && !['ASSASSIN', 'END'].includes(gameboard.currentStatus)
+  }))
 
-  useEffect(() => {
-    switch (gameboard.currentStatus) {
-      case 'SELECTTEAM':
-        setStage(0)
-        break
-      case 'VOTE':
-        setStage(1)
-        break
-      case 'VOTEFORMISSION':
-        setStage(2)
-        break
-      case 'LADY':
-        setStage(3)
-        break
-      default:
-        break
-    }
-
-    const tasks = Object.values(gameboard.history).map((ele) => {
-      if (ele.mission.results !== null) {
-        if (ele.mission.results) {
-          return { win: 'blue', numberPeople: ele.mission.teamSize }
-        } else {
-          return { win: 'red', numberPeople: ele.mission.teamSize }
-        }
-      } else {
-        return { win: 'white', numberPeople: ele.mission.teamSize }
-      }
-    })
-    setTasksData(tasks)
-
-    const record = [1, 2, 3, 4, 5].map((ele) => {
-      if (gameboard.currentRound.id >= ele) {
-        return true
-      } else {
-        return false
-      }
-    })
-    setRecords(record)
-  }, [gameboard])
+  // 這個任務已經進行到第幾次組隊（連續五次否決任務失敗）
+  const records = [1, 2, 3, 4, 5].map((ele) => (gameboard.currentRound?.id ?? 0) >= ele)
 
   return (
-    <div className="relative flex flex-col justify-center items-center gap-1 lg:gap-0 py-2 lg:py-0 lg:h-[300px]">
-      <GameFlow stage={staege} />
-      <TaskArea tasks={tasksData} />
+    <div className="relative flex flex-col justify-center items-center gap-1 lg:gap-0 py-2 lg:py-0 lg:h-[300px] w-full lg:w-auto">
+      <GameFlow stage={stage} />
+      <TaskArea tasks={tasks} />
       <VoteRecordArea records={records} />
       {children}
     </div>

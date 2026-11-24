@@ -1,142 +1,81 @@
+import { useEffect, useState } from 'react'
+import { FormProvider, useForm } from 'react-hook-form'
+import { useDispatch } from 'react-redux'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import Frame from '../component/Frame'
+import BackButton from '../component/BackButton'
 import { SelectCharacter } from '../component/SelectCharacter'
-import { useState, useEffect } from 'react'
 import { InputCheckbox, InputNumberRadio, InputRadio, Label } from '../component/Input'
 import { getDefaultRoleImg, RoleImageMappingTable, isBlueSide } from '../utils/MappingImage'
-import axios from 'axios'
-import { FormProvider, useForm } from 'react-hook-form'
-import { useSelector } from 'react-redux'
-import { useLocation, useNavigate } from 'react-router-dom'
 import Button from '../component/Button'
 import Title from '../component/Title'
-import { origin } from '../config/setting'
-import { getRoleImgPair } from '../utils/game'
+import { buildRoleImgPair } from '../utils/game'
 import { SmallCard } from '../component/Room/Card'
 import { RoleIntroduction } from '../utils/RoleIntroduction'
+import { post } from '../utils/api'
 
-const CreateRoomInput = ({ onCardClick, characterBlue, characterRed, formData, onFormChange }) => {
-  const location = useLocation()
+const CreateRoomInput = ({ username, formData, onFormChange, customRoles, onOpenSelectCharacter }) => {
   const navigate = useNavigate()
-  const methods = useForm({
-    defaultValues: formData
-  })
-  useEffect(() => {
-    const subscription = methods.watch((value) => {
-      onFormChange(value) // 更新父組件中的狀態
-    })
+  const methods = useForm({ defaultValues: formData })
+  const [errorMsg, setErrorMsg] = useState('')
+  const [loading, setLoading] = useState(false)
 
+  // 表單變動時同步回父元件（切換到選角畫面再回來時才不會遺失）
+  useEffect(() => {
+    const subscription = methods.watch((value) => onFormChange(value))
     return () => subscription.unsubscribe()
   }, [methods, onFormChange])
-  const socketId = useSelector((state) => state.socket.socketId)
 
-  //控制角色圖渲染
-  const [roleBlue, setRoleBlue] = useState([])
-  const [roleRed, setRoleRed] = useState([])
-  const initialCharacterPool = methods.getValues().CharacterPool
-  useEffect(() => {
-    const newRoleBlue = []
-    const newRoleRed = []
-    getDefaultRoleImg(Number(methods.getValues().PlayerNumber)).forEach((card) => {
-      if (isBlueSide(card)) {
-        newRoleBlue.push(card)
-      } else {
-        newRoleRed.push(card)
-      }
-    })
-    setRoleBlue(newRoleBlue)
-    setRoleRed(newRoleRed)
-  }, [methods.getValues().PlayerNumber, initialCharacterPool])
+  const playerNumber = Number(methods.watch('PlayerNumber'))
+  const isCustomPool = methods.watch('CharacterPool') === 'Choose'
 
-  useEffect(() => {
-    if (characterBlue) {
-      setRoleBlue(characterBlue)
-      setRoleRed(characterRed)
+  // 自選角色只有在人數相符時才使用，否則用預設角色
+  const roles = isCustomPool && customRoles?.length === playerNumber ? customRoles : getDefaultRoleImg(playerNumber)
+  const roleBlue = roles.filter(isBlueSide)
+  const roleRed = roles.filter((role) => !isBlueSide(role))
+
+  const handleCreateRoom = async (data) => {
+    if (loading) return
+    setLoading(true)
+    setErrorMsg('')
+    try {
+      const res = await post('/createRoom', {
+        password: '',
+        people: Number(data.PlayerNumber),
+        enableLady: data.LadyLake,
+        roleImgPair: buildRoleImgPair(roles)
+      })
+      navigate(`/Room/${res.roomId}`, {
+        state: { username, roomId: res.roomId, people: res.people, enableLady: res.enableLady }
+      })
+    } catch (error) {
+      setErrorMsg(error.message)
+    } finally {
+      setLoading(false)
     }
-  }, [characterBlue, characterRed])
-
-  // 檢查用戶名是否為空,如果為空則導航到登錄頁面
-  useEffect(() => {
-    // 檢查username是否為空s
-    if (location.state.username === '' || location.state.username === null) {
-      navigate('/Login')
-    }
-  }, [location.state?.username, navigate])
-
-  //傳遞資料到CreateRoom.SelectCharacter
-  useEffect(() => {
-    const subscription = methods.watch(() => {
-      navigate('/CreateRoom', {
-        state: { formData: methods.getValues() }
-      })
-    })
-
-    // 清理效果，取消訂閱 watch
-    return () => subscription.unsubscribe()
-  }, [methods, navigate])
-
-  // 處理創建房間的邏輯
-  const handleCreateRoom = (data) => {
-    const people = data.PlayerNumber
-    const enableLady = data.LadyLake
-    const characterPool = data.CharacterPool
-    axios
-      .post(`${origin}/createRoom`, {
-        userID: socketId,
-        userId: socketId,
-        userName: location.state.username,
-        password: 'username',
-        people: people,
-        enableLady: enableLady,
-        roleImgPair: getRoleImgPair(people)
-      })
-      .then((res) => {
-        if (res.data.success) {
-          navigate(`/Room/${socketId}`, {
-            state: {
-              username: location.state.username,
-              roomId: socketId,
-              people: people,
-              enableLady: enableLady,
-              characterPool: characterPool
-            }
-          })
-          localStorage.clear()
-        }
-      })
-      .catch((error) => {
-        console.error(error)
-      })
   }
 
-  const createRoom = methods.handleSubmit((data) => handleCreateRoom(data))
-
-  //控制自選按鈕
-  const [isCustomPool, setIsCustomPool] = useState(false) // 控制是否使用自選角色池
-
-  useEffect(() => {
-    const currentCharacterPool = methods.getValues().CharacterPool
-    setIsCustomPool(currentCharacterPool === 'Choose')
-  }, [methods, location.state?.selectedCharacters])
-
-  const handleCharacterPoolChange = (event) => {
-    setIsCustomPool(event.target.value === 'Choose')
-  }
   const handleCardClick = () => {
-    if (isCustomPool) {
-      onCardClick()
-    }
+    if (isCustomPool) onOpenSelectCharacter()
   }
 
-  const [isCardEnlarged, setIsCardEnlarged] = useState(false)
-  const handleEnlargedChange = (enlarged) => {
-    setIsCardEnlarged(enlarged)
-  }
+  const renderCards = (list) =>
+    list.map((role, index) => (
+      <SmallCard
+        key={`${role}-${index}`}
+        cardImg={RoleImageMappingTable[role]}
+        className={`w-11 sm:w-14 cursor-pointer ${isCustomPool ? 'hover:opacity-80' : ''} `}
+        onClick={handleCardClick}
+        userName={RoleIntroduction[role].showName}
+        Introduction={RoleIntroduction[role].Introduction}
+      />
+    ))
 
   return (
     <>
       <Title>創建房間</Title>
       <FormProvider {...methods}>
-        <form>
+        <form onSubmit={methods.handleSubmit(handleCreateRoom)}>
           <div className="flex flex-col gap-8 md:gap-10">
             <InputNumberRadio
               label="玩家人數"
@@ -147,55 +86,21 @@ const CreateRoomInput = ({ onCardClick, characterBlue, characterRed, formData, o
             <div>
               <Label name="CharacterPool">角色池</Label>
               <div className="flex flex-col gap-1">
-                <InputRadio
-                  label="預設"
-                  id="Default"
-                  name="CharacterPool"
-                  value="Default"
-                  onChange={handleCharacterPoolChange}
-                />
-                <InputRadio
-                  label="自選"
-                  id="Choose"
-                  name="CharacterPool"
-                  value="Choose"
-                  onChange={handleCharacterPoolChange}
-                />
+                <InputRadio label="預設" id="Default" name="CharacterPool" value="Default" />
+                <InputRadio label="自選" id="Choose" name="CharacterPool" value="Choose" />
               </div>
+              {isCustomPool && <p className="text-sm text-LightGray mt-2">點擊卡片選擇角色，長按可查看角色介紹</p>}
               <div className="mt-3 flex flex-col gap-2">
-                <div className="flex flex-wrap gap-1">
-                  {roleBlue.map((role, index) => (
-                    <SmallCard
-                      key={index}
-                      cardImg={RoleImageMappingTable[role]}
-                      alt="card"
-                      className={`w-11 sm:w-14 cursor-pointer ${isCustomPool ? 'hover:opacity-80' : ''} `}
-                      onClick={handleCardClick}
-                      userName={RoleIntroduction[role].showName}
-                      Introduction={RoleIntroduction[role].Introduction}
-                      onEnlargeChange={handleEnlargedChange}
-                    />
-                  ))}
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {roleRed.map((role, index) => (
-                    <SmallCard
-                      key={index}
-                      cardImg={RoleImageMappingTable[role]}
-                      alt="card"
-                      className={`w-11 sm:w-14 cursor-pointer ${isCustomPool ? 'hover:opacity-80' : ''} `}
-                      onClick={handleCardClick}
-                      userName={RoleIntroduction[role].showName}
-                      Introduction={RoleIntroduction[role].Introduction}
-                      onEnlargeChange={handleEnlargedChange}
-                    />
-                  ))}
-                </div>
+                <div className="flex flex-wrap gap-1">{renderCards(roleBlue)}</div>
+                <div className="flex flex-wrap gap-1">{renderCards(roleRed)}</div>
               </div>
             </div>
           </div>
+          {errorMsg && <p className="text-red-600 text-sm mt-4">{errorMsg}</p>}
           <div className="flex flex-row gap-3 mt-4">
-            <Button onClick={createRoom}>創建房間</Button>
+            <Button type="submit" disabled={loading}>
+              創建房間
+            </Button>
           </div>
         </form>
       </FormProvider>
@@ -204,38 +109,43 @@ const CreateRoomInput = ({ onCardClick, characterBlue, characterRed, formData, o
 }
 
 const CreateRoomFront = () => {
-  const [goSelectCharacter, setGoSelectCharacter] = useState(false)
-  const [characterBlue, setCharacterBlue] = useState()
-  const [characterRed, setCharacterRed] = useState()
-  const handleGoSelectCharacter = (characterBlue, characterRed) => {
-    setGoSelectCharacter(!goSelectCharacter)
-    setCharacterBlue(characterBlue)
-    setCharacterRed(characterRed)
-  }
+  const location = useLocation()
+  const dispatch = useDispatch()
+  const username = location.state?.username
+  const [isSelectingCharacter, setIsSelectingCharacter] = useState(false)
+  const [customRoles, setCustomRoles] = useState(null)
   const [formData, setFormData] = useState({
     PlayerNumber: '5',
     CharacterPool: 'Default',
     LadyLake: false
   })
-  const handleFormChange = (newData) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      ...newData
-    }))
+
+  useEffect(() => {
+    dispatch({ type: 'leaveRoom' })
+  }, [dispatch])
+
+  const [handleFormChange] = useState(() => (newData) => setFormData((prev) => ({ ...prev, ...newData })))
+
+  if (!username) return <Navigate to="/Login" replace />
+
+  const handleSelectDone = (blue, red) => {
+    if (blue && red) setCustomRoles([...blue, ...red])
+    setIsSelectingCharacter(false)
   }
 
   return (
     <div className="background flex flex-col justify-center items-center gap-10">
+      <BackButton to="/Login" />
       <Frame className="text-White">
-        {goSelectCharacter ? (
-          <SelectCharacter onClickButton={handleGoSelectCharacter} />
+        {isSelectingCharacter ? (
+          <SelectCharacter playerNumber={Number(formData.PlayerNumber)} onClickButton={handleSelectDone} />
         ) : (
           <CreateRoomInput
-            onCardClick={handleGoSelectCharacter}
-            characterBlue={characterBlue}
-            characterRed={characterRed}
-            formData={formData} // 傳遞表單資料
-            onFormChange={handleFormChange} // 傳遞更新函式
+            username={username}
+            formData={formData}
+            onFormChange={handleFormChange}
+            customRoles={customRoles}
+            onOpenSelectCharacter={() => setIsSelectingCharacter(true)}
           />
         )}
       </Frame>

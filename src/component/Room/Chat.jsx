@@ -37,19 +37,29 @@ const Chat = ({ roomId, userName }) => {
   }
 
   // 新增 useEffect 來滾動到最新訊息
+  // 只捲動聊天框本身（scrollIntoView 會讓手機整個頁面跟著跳）
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    const box = messagesEndRef.current?.parentElement
+    if (box) box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' })
+  }, [messages, selectedTab])
 
   return (
     <div className="bg-Black/[0.7] text-White flex flex-col w-full lg:w-auto">
       <div className="flex border-[1.8px] borderGradientFrame">
         <div className="flex flex-col m-2 flex-grow h-28 lg:h-32 w-auto min-w-0 lg:w-[600px] overflow-auto break-words scrollbar scrollbar-thumb-Gray  ">
-          {messages.map((ele, index) => (
-            <div key={index}>
-              {ele.userName}: {ele.message}
-            </div>
-          ))}
+          {messages
+            .filter((ele) =>
+              selectedTab === 'All'
+                ? true
+                : selectedTab === 'System'
+                  ? ele.userName === 'system'
+                  : ele.userName !== 'system'
+            )
+            .map((ele, index) => (
+              <div key={index} className={ele.userName === 'system' ? 'text-LightGray' : ''}>
+                {ele.userName === 'system' ? `【系統】${ele.message}` : `${ele.userName}: ${ele.message}`}
+              </div>
+            ))}
           <div ref={messagesEndRef} /> {/* 新增此行 */}
         </div>
         <div className="flex flex-col w-20 lg:w-28 shrink-0 -mr-[1.8px] justify-center">
@@ -84,6 +94,8 @@ const Chat = ({ roomId, userName }) => {
           type="text"
           className="flex-grow min-w-0 borderGradientFrame border-[1.8px] p-2 bg-clip-content focus:outline-0 bg-Gray -mr-[1.8px]"
           value={message}
+          maxLength={300}
+          enterKeyHint="send"
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
         />

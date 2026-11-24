@@ -5,160 +5,146 @@ import cardIconNodrip from '../../assets/icon/card-icon-nodrip.webp'
 import cardIconShield from '../../assets/icon/card-icon-shield.webp'
 import cardFrame from '../../assets/role/card-frame.webp'
 import Knife from '../../assets/gameboard/Knife.webp'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Button from '../Button'
 
-const Card = ({
-  userName,
-  cardImg,
-  center,
-  onClick,
-  selected,
-  hasLady,
-  hadLady,
-  isLeader,
-  isTeamMember,
-  currentStatus
-}) => {
-  const getStatusIcon = () => {
-    switch (currentStatus) {
-      case 'SELECTTEAM':
-        return cardIconShield
-      case 'LADY':
-        return cardIconDrip
-      case 'ASSASSIN':
-        return Knife
-      default:
-        return null
-    }
-  }
+const SELECTED_ICON = {
+  SELECTTEAM: cardIconShield,
+  LADY: cardIconDrip,
+  ASSASSIN: Knife
+}
+
+/** 卡片右上角的狀態圖示（Card 與 CardFlat 共用） */
+export const CardStatusIcons = ({ selected, hasLady, hadLady, isLeader, isTeamMember, currentStatus, iconClass }) => {
+  const icons = [
+    selected && SELECTED_ICON[currentStatus] && [SELECTED_ICON[currentStatus], '已選擇'],
+    hasLady && [cardIconDrip, '湖中女神'],
+    hadLady && [cardIconNodrip, '曾持有湖中女神'],
+    isLeader && [cardIconCrowm, '隊長'],
+    isTeamMember && [cardIconShield, '出任務隊員']
+  ].filter(Boolean)
+  return icons.map(([src, alt]) => (
+    <img
+      key={alt}
+      src={src}
+      alt={alt}
+      title={alt}
+      className={`${iconClass} object-contain opacity-80 hover:opacity-100 transition-opacity duration-200`}
+    />
+  ))
+}
+
+const Card = ({ userName, cardImg, center, onClick, selectable, ...status }) => {
   return (
-    <div className="flex relative w-[120px] lg:w-[180px] items-center justify-center bg-Black/[0.7]" onClick={onClick}>
-      <img src={cardImg} alt="cardimg" className="h-full object-contain" />
-      <div className="text-White absolute bottom-2 lg:bottom-4 text-sm lg:text-base tracking-widest">{userName}</div>
-      <div className="flex flex-col absolute top-4 right-4 lg:top-8 lg:right-8">
-        {selected && (
-          <img
-            src={getStatusIcon(currentStatus)}
-            alt="selected"
-            className="w-5 h-5 lg:w-8 lg:h-8 object-contain opacity-80 hover:opacity-100 transition-opacity duration-200"
-          />
-        )}
-        {hasLady && (
-          <img
-            src={cardIconDrip}
-            alt="hasLady"
-            className="w-5 h-5 lg:w-8 lg:h-8 object-contain opacity-80 hover:opacity-100 transition-opacity duration-200"
-          />
-        )}
-        {hadLady && (
-          <img
-            src={cardIconNodrip}
-            alt="hadLady"
-            className="w-5 h-5 lg:w-8 lg:h-8 object-contain opacity-80 hover:opacity-100 transition-opacity duration-200"
-          />
-        )}
-        {isLeader && (
-          <img
-            src={cardIconCrowm}
-            alt="isLeader"
-            className="w-5 h-5 lg:w-8 lg:h-8 object-contain opacity-80 hover:opacity-100 transition-opacity duration-200"
-          />
-        )}
-        {isTeamMember && (
-          <img
-            src={cardIconShield}
-            alt="isTeamMember"
-            className="w-5 h-5 lg:w-8 lg:h-8 object-contain opacity-80 hover:opacity-100 transition-opacity duration-200"
-          />
-        )}
+    <div
+      className={`flex relative w-[120px] lg:w-[180px] items-center justify-center bg-Black/[0.7] select-none ${
+        selectable ? 'cursor-pointer hover:drop-shadow-[0_0_6px_White]' : ''
+      } ${status.selected ? 'drop-shadow-[0_0_8px_White]' : ''}`}
+      onClick={onClick}
+    >
+      <img src={cardImg} alt="card" className="h-full object-contain" draggable={false} />
+      <div className="text-White absolute bottom-2 lg:bottom-4 text-sm lg:text-base tracking-widest truncate max-w-[90%]">
+        {userName}
       </div>
-      <img
-        src={center}
-        alt="centetPicture"
-        className={`absolute w-16 h-16 top-6 lg:w-28 lg:h-28 lg:top-10 left-1/2 -translate-x-1/2 ${center === null ? 'hidden' : ''}`}
-      />
+      <div className="flex flex-col absolute top-4 right-4 lg:top-8 lg:right-8">
+        <CardStatusIcons {...status} iconClass="w-5 h-5 lg:w-8 lg:h-8" />
+      </div>
+      {center && (
+        <img
+          src={center}
+          alt="投票結果"
+          className="absolute w-16 h-16 top-6 lg:w-28 lg:h-28 lg:top-10 left-1/2 -translate-x-1/2"
+        />
+      )}
     </div>
   )
 }
 
-const SmallCard = ({ userName, cardImg, onClick, className, Introduction, onEnlargeChange }) => {
+const LONG_PRESS_MS = 500
+
+const SmallCard = ({ userName, cardImg, onClick, className, Introduction }) => {
   const [isEnlarged, setIsEnlarged] = useState(false)
-  
-  let timer = null
-  const handleLongPress = () => {
-    timer = setTimeout(() => {
-      setIsEnlarged(true)
-      onEnlargeChange(true) // 通知父元件
-    }, 500)
-  }
-
-  const handleTouchEnd = () => {
-    setIsEnlarged(false)
-    onEnlargeChange(false) // 通知父元件
-    clearTimeout(timer)
-  }
-
-
   const [isBack, setIsBack] = useState(false)
+  const timerRef = useRef(null)
+  const longPressedRef = useRef(false)
 
-  const handleTurnBack = () => {
-    setIsBack(true)
+  // 用 pointer 事件，滑鼠與手機觸控都支援長按
+  const handlePointerDown = () => {
+    longPressedRef.current = false
+    clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => {
+      longPressedRef.current = true
+      setIsBack(false)
+      setIsEnlarged(true)
+    }, LONG_PRESS_MS)
   }
 
-  const handleTurnFront = () => {
-    setIsBack(false)
+  const cancelLongPress = () => clearTimeout(timerRef.current)
+
+  useEffect(() => () => clearTimeout(timerRef.current), [])
+
+  const handleClick = (e) => {
+    // 長按放開後不要再觸發一般點擊
+    if (longPressedRef.current) {
+      e.preventDefault()
+      longPressedRef.current = false
+      return
+    }
+    onClick?.(e)
+  }
+
+  const handleClose = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsEnlarged(false)
   }
 
   return (
     <>
-      <div className={`flex relative items-center justify-center bg-Black/[0.7] ${className}`}>
+      <div className={`flex relative items-center justify-center bg-Black/[0.7] select-none ${className}`}>
         <img
           src={cardImg}
-          alt="cardimg"
-          className="h-full object-contain"
-          onClick={onClick}
-          onMouseDown={handleLongPress}
-          onMouseUp={handleTouchEnd}
+          alt={userName}
           title={userName}
+          draggable={false}
+          className="h-full object-contain [-webkit-touch-callout:none]"
+          onClick={handleClick}
+          onPointerDown={handlePointerDown}
+          onPointerUp={cancelLongPress}
+          onPointerLeave={cancelLongPress}
+          onPointerCancel={cancelLongPress}
+          onContextMenu={(e) => e.preventDefault()}
         />
       </div>
-      {isEnlarged && (
-        <div className="fixed inset-0 flex items-center justify-center bg-Black/80 z-50">
-          <div className="relative w-[250px] max-w-[80vw]">
-            <div>
-              {isBack ? (
-                <div className="bg-Black/80">
-                  <img
-                    src={cardFrame}
-                    alt="enlarged cardimg"
-                    className="w-full object-contain"
-                    onClick={handleTurnFront}
-                  />
-                  <div className="text-justify text-White w-3/4 absolute text-base left-1/2 -translate-x-1/2 top-[150px] -translate-y-1/2 ">
+      {/* 用 portal 掛到 body：不受外層 opacity / label 影響 */}
+      {isEnlarged &&
+        createPortal(
+          <div
+            className="fixed inset-0 flex items-center justify-center bg-Black/80 z-50 font-ZenOldMincho"
+            onClick={handleClose}
+          >
+            <div className="relative w-[250px] max-w-[80vw]" onClick={(e) => e.stopPropagation()}>
+              <div className="relative bg-Black/80 cursor-pointer" onClick={() => setIsBack(!isBack)}>
+                <img src={isBack ? cardFrame : cardImg} alt="enlarged card" className="w-full object-contain" />
+                {isBack ? (
+                  <div className="text-justify text-White w-3/4 absolute text-sm sm:text-base left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
                     {Introduction}
                   </div>
-                </div>
-              ) : (
-                <div className="bg-Black/80">
-                  <img
-                    src={cardImg}
-                    alt="enlarged cardimg"
-                    className="w-full object-contain"
-                    onClick={handleTurnBack}
-                  />
-                  <div className="text-White absolute text-base bottom-[102px] left-1/2 -translate-x-1/2 tracking-widest">
+                ) : (
+                  <div className="text-White absolute text-base bottom-[34%] left-1/2 -translate-x-1/2 tracking-widest whitespace-nowrap">
                     {userName}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+              <p className="text-LightGray text-xs text-center mt-2">點擊卡片翻面查看介紹</p>
+              <Button mt="mt-4" onClick={handleClose}>
+                確認
+              </Button>
             </div>
-            <Button mt="mt-6" onClick={handleTouchEnd}>
-              確認
-            </Button>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </>
   )
 }

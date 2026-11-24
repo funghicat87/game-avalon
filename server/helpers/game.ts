@@ -38,18 +38,34 @@ const gameBoardRuleByNumber: {[key: number]: GameBoardRule} = {
 /**
  * 函式：隨機派發角色
  */
+export const EVIL_ROLES = ['Morgana', 'Assassin', 'Mordred', 'Oberon', 'Minion']
+
+export function isEvil(role: string) {
+  return EVIL_ROLES.includes(role)
+}
+
+/** Fisher–Yates 洗牌（sort(() => Math.random() - 0.5) 的結果分佈不平均） */
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 function assignRoles(players: PlayerModel[], roleImgPair: {[key: string]: string}) {
-  let rolesImgPair = roleImgPair;
-  const shuffledRolesImg = Object.keys(rolesImgPair).sort(() => Math.random() - 0.5)
-  // const shuffledRolesImg = Object.keys(rolesImgPair)
+  const shuffledRolesImg = shuffle(Object.keys(roleImgPair))
   for (let i = 0; i < players.length; i++) {
-    players[i].role = rolesImgPair[shuffledRolesImg[i]]
+    players[i].role = roleImgPair[shuffledRolesImg[i]]
     players[i].roleImg = shuffledRolesImg[i]
-    players[i].selected = false,
-    players[i].hasLady = false,
-    players[i].hadLady = false,
-    players[i].isLeader = false,
+    players[i].selected = false
+    players[i].hasLady = false
+    players[i].hadLady = false
+    players[i].hadLadyIdx = -1
+    players[i].isLeader = false
     players[i].isTeamMember = false
+    players[i].isAgree = -1
   }
 }
 
@@ -100,8 +116,6 @@ function initGameBoard(gameBoard: GameStateModel, players: PlayerModel[]) {
   */
   let history: History = {}
 
-  console.log('players.length:', gameBoardRuleByNumber)
-
   const missionTeamSize = gameBoardRuleByNumber[players.length]['teamSize']
   const missionFailureCondition = gameBoardRuleByNumber[players.length]['failureCondition']
 
@@ -129,13 +143,15 @@ function initGameBoard(gameBoard: GameStateModel, players: PlayerModel[]) {
 function chooseLeader(gameBoard: GameStateModel, players: PlayerModel[]) {
   const randomIndex = Math.floor(Math.random() * players.length)
   gameBoard['currentRound']['leaderIndex'] = randomIndex
+  players.forEach((player, idx) => { player.isLeader = idx === randomIndex })
 }
 
 /**
- * 函式：隨機選擇湖中女神
+ * 函式：選擇湖中女神（規則：第一任隊長右手邊，也就是前一位玩家）
  */
 function chooseLady(gameBoard: GameStateModel, players: PlayerModel[]): number {
-  return Math.floor(Math.random() * players.length)
+  const leaderIndex = gameBoard.currentRound.leaderIndex ?? 0
+  return (leaderIndex - 1 + players.length) % players.length
 }
 
 /**
@@ -164,13 +180,12 @@ function updateLadyIndex(players: PlayerModel[], gameBoard: GameStateModel, indi
 function simulateAISelectLadyIndex(players: PlayerModel[], gameBoard: GameStateModel) {
   let idx = -1
   if (gameBoard.ladyIndex !== null && !players[gameBoard.ladyIndex].isHuman) {
-    let listNotYetHadLady: number[] = []
-    players.forEach((ele, idx) => {
-      if (!gameBoard.ladyIndexHistory.includes(idx)) {
-        listNotYetHadLady.push(idx)
-      }
-    })
-    idx = listNotYetHadLady[Math.floor(Math.random() * listNotYetHadLady.length)]
+    const listNotYetHadLady = players
+      .map((_, i) => i)
+      .filter((i) => !gameBoard.ladyIndexHistory.includes(i))
+    if (listNotYetHadLady.length > 0) {
+      idx = listNotYetHadLady[Math.floor(Math.random() * listNotYetHadLady.length)]
+    }
   }
   return idx
 }
@@ -191,6 +206,7 @@ function updateTeamMembers(players: PlayerModel[], gameBoard: GameStateModel, in
   gameBoard['currentRound']['teamMembersIndex'] = indices
   players.forEach((player) => {
     player.isTeamMember = false
+    player.isAgree = -1  // 新的一輪投票，清掉上一輪的結果
   })
   for (const index of indices) {
     players[index].isTeamMember = true
@@ -249,7 +265,7 @@ function updateCurrentRound(players: PlayerModel[], gameBoard: GameStateModel) {
   gameBoard.history[gameBoard.currentMission.id]['rounds'].push(
     JSON.parse(JSON.stringify(gameBoard['currentRound']))
   )
-  players.forEach((player) => { player.isAgree = -1 });
+  // 投票結果（isAgree）保留到下一次組隊，讓大家看得到這輪誰贊成、誰反對
   return isApproved
 }
 
@@ -303,7 +319,6 @@ function checkWinner(tempVoteInfo: {[key: string]: number}[], gameBoard: GameSta
  * 函式：更新CurrentMission結果
  */
 function updateCurrentMission(res: boolean, gameBoard: GameStateModel) {
-  console.log('Mission result:', res)
   gameBoard['currentMission']['results'] = res
   gameBoard.history[gameBoard.currentMission.id]['mission']['results'] = res
 }
@@ -345,7 +360,8 @@ function checkGameIsEnd(gameBoard: GameStateModel) {
  * 函數：從 players 亂數選擇幾位玩家
  */
 function simulateAIRandomSelectPlayersIdx(players: PlayerModel[], gameBoard: GameStateModel) {
-  if (!gameBoard.currentRound.leaderIndex) {
+  // 注意：leaderIndex 可能是 0，不能用 falsy 判斷
+  if (gameBoard.currentRound.leaderIndex === null) {
     return []
   }
   if (!players[gameBoard.currentRound.leaderIndex].isHuman) {
@@ -381,10 +397,8 @@ function simulateAIRandomVoteForMission(players: PlayerModel[], gameBoard: GameS
   const playersOnMission = gameBoard.currentRound.teamMembersIndex.map((index) => players[index])
   for (const player of playersOnMission) {
     if (!player.isHuman && !arr.includes(player.name)) {
-      if (['Merlin', 'Percival', 'LoyalServant'].includes(player.role)) {
-        res.push({ [player.name]: 1 })
-      }
-      res.push({ [player.name]: randomZeroOrOne() })
+      // 好人只能投成功；壞人隨機
+      res.push({ [player.name]: isEvil(player.role) ? randomZeroOrOne() : 1 })
     }
   }
   return res
@@ -394,13 +408,14 @@ function simulateAIRandomVoteForMission(players: PlayerModel[], gameBoard: GameS
  * 函式：電腦隨機
  */
 function simulateAISelectMerlinIndex(players:PlayerModel[]) {
-  let idx = -1
-  for (const player of players) {
-    if (!player.isHuman && player.role === 'Assassin') {
-      idx = Math.floor(Math.random() * players.length)
-    }
-  }
-  return idx
+  const assassin = players.find((p) => p.role === 'Assassin')
+  if (!assassin || assassin.isHuman) return -1
+  // 刺客認得除了奧伯倫以外的壞人，只從其餘玩家中挑
+  const candidates = players
+    .map((p, i) => ({ p, i }))
+    .filter(({ p }) => p !== assassin && !(isEvil(p.role) && p.role !== 'Oberon'))
+    .map(({ i }) => i)
+  return candidates[Math.floor(Math.random() * candidates.length)] ?? -1
 }
 
 /**

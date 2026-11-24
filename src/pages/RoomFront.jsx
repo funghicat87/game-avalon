@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import Knife from '@/assets/gameboard/Knife.webp'
 import Shield from '@/assets/icon/card-icon-shield.webp'
-import Drip from '../assets/icon/card-icon-drip.webp'
+import Drip from '@/assets/icon/card-icon-drip.webp'
 import Background from '@/component/Background'
+import BackButton from '@/component/BackButton'
 import { Card } from '@/component/Room/Card'
 import Chat from '@/component/Room/Chat'
 import GameBoardFrameA from '@/component/Room/GameBoardFrameA'
@@ -15,256 +16,233 @@ import PlayerArea from '@/component/Room/PlayerArea'
 import SettingArea from '@/component/Room/SettingArea'
 import { gameActions } from '@/features/gameSlice'
 import { useGameActions } from '@/hooks/useGameActions'
-import { RoleImageMappingTable } from '@/utils/MappingImage'
-import agree from '@/assets/gameboard/VoteingAgree.webp'
-import disagree from '@/assets/gameboard/VoteingDisagree.webp'
+import { RoleImageMappingTable, voteImage } from '@/utils/MappingImage'
+import { isEvilRole } from '@/utils/game'
+
+const hasVoted = (votes, name) => (votes ?? []).some((vote) => Object.keys(vote)[0] === name)
+
+// 大廳中不顯示上一局的角色與狀態
+const toLobbyPlayer = (player) => ({
+  ...player,
+  role: '',
+  roleImg: 'Back',
+  isAgree: -1,
+  hasLady: false,
+  hadLady: false,
+  isLeader: false,
+  isTeamMember: false,
+  selected: false
+})
 
 const RoomFront = () => {
   const dispatch = useDispatch()
-  const players = useSelector((state) => state.game.players)
+  const gamePlayers = useSelector((state) => state.game.players)
   const gameboard = useSelector((state) => state.game.gameboard)
   const isStart = useSelector((state) => state.game.isStart)
   const isShow = useSelector((state) => state.game.isShow)
   const errorMsg = useSelector((state) => state.game.errorMsg)
+  const roomClosed = useSelector((state) => state.game.roomClosed)
+  const isConnected = useSelector((state) => state.socket.isConnected)
 
   const location = useLocation()
   const navigate = useNavigate()
-  const [userName, setUserName] = useState(null)
-  const [roomId, setRoomId] = useState(null)
+  const params = useParams()
+  const userName = location.state?.username
+  const roomId = location.state?.roomId ?? params.id
 
-  const handleOnpopstate = () => {
-    history.go(1)
-  }
-
-  const handleBeforeUnload = (event) => {
-    event.preventDefault()
-    event.returnValue = '' // This is required for Chrome
-  }
-
-  const handleAfterLoaded = () => {
-    navigate('/')
-  }
-
+  // 離開 / 重新整理前提醒（重新整理後會自動回到房間）
   useEffect(() => {
-    history.pushState(
-      {
-        usr: {
-          username: location.state.username,
-          roomId: location.state.roomId,
-          people: location.state.people,
-          enableLady: location.state.enableLady
-        }
-      },
-      document.title,
-      location.href
-    )
-
+    const handleBeforeUnload = (event) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
     window.addEventListener('beforeunload', handleBeforeUnload)
-    window.addEventListener('popstate', handleOnpopstate)
-    window.addEventListener('load', handleAfterLoaded)
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload)
-      window.removeEventListener('popstate', handleOnpopstate)
-      window.removeEventListener('load', handleAfterLoaded)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.href, location.state.enableLady, location.state.people, location.state.roomId, location.state.username])
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [])
 
   useEffect(() => {
-    if (!location.state) {
-      navigate('/Login')
+    if (roomClosed) {
+      alert(roomClosed)
+      navigate('/Login', { replace: true })
     }
-    setUserName(location.state.username)
-    setRoomId(location.state.roomId)
-  }, [location.state, navigate])
+  }, [roomClosed, navigate])
 
-  // const checkIsOwner = () => {
-  //   let isOwner = false
-  //   players.forEach((element) => {
-  //     if (element.name === userName && element.isOwner) {
-  //       isOwner = true
-  //     }
-  //   })
-  //   return isOwner
-  // }
+  const players = useMemo(() => (isStart ? gamePlayers : gamePlayers.map(toLobbyPlayer)), [isStart, gamePlayers])
+  const status = isStart ? gameboard.currentStatus : ''
+  const { handleConfirmLady, handleConfirmMerlin, handleConfirmTeamMember } = useGameActions(players, gameboard, roomId)
 
-  const handleBlockClick = (playerName, userName) => {
-    dispatch(gameActions.setSelectedPlayer({ playerName, userName }))
+  if (!userName) return <Navigate to="/Login" replace />
+
+  const myIndex = players.findIndex((player) => player.name === userName)
+  const me = players[myIndex] ?? { name: userName, role: '', roleImg: 'Back', isAgree: -1 }
+  const isOwner = !!me.isOwner
+  const isEvil = isEvilRole(me.role)
+
+  const round = gameboard.currentRound
+  const mission = gameboard.currentMission
+  const leaderName = round ? players[round.leaderIndex]?.name : ''
+  const ladyName = gameboard.ladyIndex != null ? players[gameboard.ladyIndex]?.name : ''
+  const isLeader = isStart && round?.leaderIndex === myIndex
+  const isLadyOwner = isStart && gameboard.ladyIndex === myIndex
+  const isTeamMember = isStart && !!round?.teamMembersIndex.includes(myIndex)
+
+  // 這個階段我能不能點選其他玩家
+  const selectable =
+    (status === 'SELECTTEAM' && isLeader) ||
+    (status === 'LADY' && isLadyOwner) ||
+    (status === 'ASSASSIN' && me.role === 'Assassin')
+
+  const handleSelect = (playerName) => {
+    if (selectable) dispatch(gameActions.setSelectedPlayer({ playerName, userName }))
   }
 
   const handleToLobby = () => {
     dispatch(gameActions.setIsStart(false))
   }
 
-  const checkIsLeader = () => {
-    let isLeader = false
-    if (gameboard) {
-      if (players[gameboard.currentRound.leaderIndex].name === userName) {
-        isLeader = true
-      }
-    }
-    return isLeader
-  }
-
-  const checkIsTeamMember = () => {
-    let isTeamMember = false
-    if (gameboard) {
-      gameboard.currentRound.teamMembersIndex.forEach((element) => {
-        if (players[element].name === userName) {
-          isTeamMember = true
-        }
-      })
-    }
-    return isTeamMember
-  }
-
-  const checkIsBlueSide = () => {
-    const blueSideMember = ['Merlin', 'Percival', 'LoyalServant']
-    let isBlueSide = false
-    players.forEach((element) => {
-      if (element.name === userName && blueSideMember.includes(element.role)) {
-        isBlueSide = true
-      }
-    })
-    return isBlueSide
-  }
-
-  // const handleGameStart = () => {
-  //   // 檢查人數是否足夠
-  //   if (players.length < location.state.people) {
-  //     alert('人數不夠')
-  //     return
-  //   }
-  //   dispatch({
-  //     type: 'sendGameStatus',
-  //     payload: {
-  //       gameType: 'GAMESTART',
-  //       roomId: roomId
-  //     }
-  //   })
-  // }
-
-  const { handleConfirmLady, handleConfirmMerlin, handleConfirmTeamMember } = useGameActions(players, gameboard, roomId)
-
-  const showBtn = (key) => {
-    if (!isShow) return <></>
-    switch (key) {
+  /** 輪到別人時顯示的提示 */
+  const getHint = () => {
+    switch (status) {
+      case 'SELECTTEAM':
+        return isLeader ? '' : `等待隊長 ${leaderName} 選擇出任務的隊員`
       case 'VOTE':
+        return hasVoted(round.votes, userName) ? `等待其他玩家投票（${round.votes.length}/${players.length}）` : ''
+      case 'VOTEFORMISSION':
+        return isTeamMember && !hasVoted(mission.votes, userName)
+          ? ''
+          : `等待隊員出任務（${mission.votes.length}/${mission.teamSize}）`
+      case 'LADY':
+        return isLadyOwner ? '' : `等待湖中女神 ${ladyName} 查驗身分`
+      case 'ASSASSIN':
+        return me.role === 'Assassin' ? '' : '好人完成三個任務！等待刺客刺殺梅林'
+      default:
+        return ''
+    }
+  }
+
+  const renderAction = () => {
+    if (status === 'END') {
+      const result = gameboard.endOfWin === (isEvil ? 'EVIL' : 'GOOD')
+      return <GameOver result={result} winner={gameboard.endOfWin} onClick={handleToLobby} />
+    }
+    if (!isShow) return null
+    switch (status) {
+      case 'VOTE':
+        if (hasVoted(round.votes, userName)) return null
         return (
           <GameBoardFrameB
             content="Voteing"
+            title={`是否同意隊長 ${leaderName} 的隊伍出任務？`}
             roomId={roomId}
             name={userName}
-            status={gameboard.currentStatus}
+            status={status}
             validation={{ required: { value: true, message: '請選擇是否同意出任務' } }}
           />
         )
-      case 'SELECTTEAM':
-        if (checkIsLeader()) {
-          const selectedPlayersCount = players.filter((player) => player.selected).length
-          const remainingPlayersCount = Math.max(0, gameboard.currentMission.teamSize - selectedPlayersCount)
-          return (
-            <GameBoardFrameA
-              title="點擊頭像選擇出任務玩家"
-              content={Array(remainingPlayersCount).fill(Shield)}
-              onClick={handleConfirmTeamMember}
-              errorMsg={errorMsg}
-            />
-          )
-        }
-        break
+      case 'SELECTTEAM': {
+        if (!isLeader) return null
+        const selectedPlayersCount = players.filter((player) => player.selected).length
+        const remainingPlayersCount = Math.max(0, mission.teamSize - selectedPlayersCount)
+        return (
+          <GameBoardFrameA
+            title={`點擊頭像選擇 ${mission.teamSize} 位出任務玩家`}
+            content={Array(remainingPlayersCount).fill(Shield)}
+            onClick={handleConfirmTeamMember}
+            errorMsg={errorMsg}
+          />
+        )
+      }
       case 'VOTEFORMISSION':
-        if (checkIsTeamMember()) {
-          if (checkIsBlueSide()) {
-            return (
-              <GameBoardFrameB
-                content="Task"
-                roomId={roomId}
-                name={userName}
-                status={gameboard.currentStatus}
-                validation={{ required: { value: true, message: '請選擇任務成功或是失敗' } }}
-                isBlueSide={true}
-              />
-            )
-          } else {
-            return (
-              <GameBoardFrameB
-                content="Task"
-                roomId={roomId}
-                name={userName}
-                status={gameboard.currentStatus}
-                validation={{ required: { value: true, message: '請選擇任務成功或是失敗' } }}
-              />
-            )
-          }
-        }
-        break
+        if (!isTeamMember || hasVoted(mission.votes, userName)) return null
+        return (
+          <GameBoardFrameB
+            content="Task"
+            title={isEvil ? '選擇任務成功或失敗' : '好人只能讓任務成功'}
+            roomId={roomId}
+            name={userName}
+            status={status}
+            validation={{ required: { value: true, message: '請選擇任務成功或是失敗' } }}
+            isBlueSide={!isEvil}
+          />
+        )
       case 'LADY':
-        return <GameBoardFrameA title="點擊頭像選擇湖中女神對象" content={[Drip]} onClick={handleConfirmLady} />
+        if (!isLadyOwner) return null
+        return (
+          <GameBoardFrameA
+            title="點擊頭像選擇湖中女神查驗對象"
+            content={[Drip]}
+            onClick={handleConfirmLady}
+            errorMsg={errorMsg}
+          />
+        )
       case 'ASSASSIN':
-        return <GameBoardFrameA title="點擊頭像刺殺梅林" content={[Knife]} onClick={handleConfirmMerlin} />
-      case 'END':
-        return <GameOver result={result} onClick={handleToLobby}></GameOver>
+        if (me.role !== 'Assassin') return null
+        return (
+          <GameBoardFrameA
+            title="點擊頭像刺殺梅林"
+            content={[Knife]}
+            onClick={handleConfirmMerlin}
+            errorMsg={errorMsg}
+          />
+        )
       default:
-        ;<></>
+        return null
     }
   }
 
-  let me = players.find((player) => player.name === userName)
-  // if me is defined return { name: me.name, role: me.role, roleImg: me.roleImg}
-  // if me is undefined return { name: "", role: "", roleImg: ""}
-  me =
-    me !== undefined
-      ? me
-      : {
-          name: userName,
-          role: '',
-          roleImg: 'Back',
-          isHuman: false,
-          isOwner: false,
-          selected: false,
-          hadLady: false,
-          findMerlin: false,
-          VoteResult: null
-        }
-  const [result, setResult] = useState(true)
+  const hint = getHint()
 
-  useEffect(() => {
-    let faction = ''
-    if (['Merlin', 'Percival', 'LoyalServant', 'LoyalServantB', 'LoyalServantC', 'LoyalServantD'].includes(me.role)) {
-      faction = 'GOOD'
-    } else {
-      faction = 'EVIL'
-    }
-
-    if (faction === gameboard.endOfWin) {
-      setResult(true)
-    } else {
-      setResult(false)
-    }
-  }, [me.role, gameboard.endOfWin])
   return (
     <Background>
-      <PlayerArea players={players} userName={userName} currentStatus={gameboard.currentStatus} />
+      <BackButton
+        to="/Login"
+        confirmText={
+          isOwner
+            ? '你是房主，離開後房間會關閉，確定要離開嗎？'
+            : isStart && status !== 'END'
+              ? '遊戲進行中，離開會讓這局中止，確定要離開嗎？'
+              : '確定要離開房間嗎？'
+        }
+      >
+        離開房間
+      </BackButton>
+      {!isConnected && (
+        <div className="fixed top-0 inset-x-0 z-[60] bg-red-900/90 text-White text-center text-sm py-2">
+          連線中斷，正在重新連線…
+        </div>
+      )}
+      <PlayerArea
+        players={players}
+        userName={userName}
+        currentStatus={status}
+        selectable={selectable}
+        onSelect={handleSelect}
+      />
       {isStart ? (
-        <GameBoardFront gameboard={gameboard}>{showBtn(gameboard.currentStatus)}</GameBoardFront>
+        <GameBoardFront gameboard={gameboard}>
+          {hint && (
+            <p className="text-LightGray text-sm text-center tracking-wider mt-1 lg:absolute lg:-bottom-6">{hint}</p>
+          )}
+          {renderAction()}
+        </GameBoardFront>
       ) : (
-        <SettingArea roomId={roomId} players={players} state={location.state} />
+        <SettingArea roomId={roomId} players={players} people={location.state?.people} isOwner={isOwner} />
       )}
 
       <div className="flex flex-col-reverse lg:flex-row items-center justify-center gap-2 w-full lg:w-auto">
         <Chat roomId={roomId} userName={userName} />
         <Card
           userName={me.name}
-          cardImg={RoleImageMappingTable[me.roleImg]}
-          center={me.isAgree === 1 ? agree : me.isAgree === 0 ? disagree : null}
-          onClick={() => handleBlockClick(me.name, userName)}
+          cardImg={RoleImageMappingTable[me.roleImg] ?? RoleImageMappingTable.Back}
+          center={voteImage(me.isAgree)}
+          onClick={() => handleSelect(me.name)}
+          selectable={selectable}
           selected={me.selected}
           hasLady={me.hasLady}
           hadLady={me.hadLady}
           isLeader={me.isLeader}
           isTeamMember={me.isTeamMember}
-          currentStatus={gameboard.currentStatus}
+          currentStatus={status}
         />
       </div>
     </Background>

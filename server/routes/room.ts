@@ -5,75 +5,69 @@ import SocketIOManager from '../managers/websocket.js';
 const router = express.Router();
 const roomManager = RoomManager.getInstance();
 
-router.post('/setNickName', (req: Request, res: Response) => {
-  const { userId, userName } = req.body
+/** 統一處理錯誤：業務錯誤回 400，讓前端可以直接顯示 message */
+const handle = (fn: (req: Request) => object) => (req: Request, res: Response) => {
   try {
-    const socketIOManager = SocketIOManager.getInstance();
-    const success = socketIOManager.setNickName(userId, userName);
-    res.json({ success: true, message: `User with ID ${userId} joined room ${userName}.` });
+    res.json({ success: true, ...fn(req) });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }  
-})
-
-router.post('/joinRoom', (req: Request, res: Response) => {
-  const { userId, userName, roomId, password } = req.body;
-  try {
-    const socketIOManager = SocketIOManager.getInstance();
-    const players = roomManager.joinRoom({ userId, userName, roomId, password });
-    socketIOManager.socketClientJoin(userId, roomId)
-    socketIOManager.sendEvent(roomId, 'roomStatus', players)
-    res.json({ success: true, message: `User with ID ${userId} joined room ${roomId}.` });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(400).json({ success: false, message: error.message });
   }
-});
+};
 
-router.post('/createRoom', (req: Request, res: Response) => {
-  const { userId, userName, password, people, enableLady, roleImgPair } = req.body;
-  try {
-    const socketIOManager = SocketIOManager.getInstance();
-    const players = roomManager.createRoom({ userId, userName, password, people, enableLady, roleImgPair });
-    socketIOManager.socketClientJoin(userId, userId)
-    socketIOManager.sendEvent(userId, 'roomStatus', players)
-    res.json({ success: true, message: `Room ${userId} created successfully.` });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+/** 取得已設定的暱稱，沒有設定代表還沒登入 */
+const requireUserName = (socketIOManager: SocketIOManager, userId: string) => {
+  const userName = socketIOManager.getUserName(userId);
+  if (!userName) throw new Error('請先輸入姓名');
+  return userName;
+};
 
-router.post('/modifyRoom', (req: Request, res: Response) => {
-  const { userId, userName, password, people, enableLady } = req.body;
-  try {
-    const players = roomManager.modifyRoom({ userId, userName, password, people, enableLady });
-    res.json({ success: true, message: `Room ${userId} modify successfully.` });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+router.post('/setNickName', handle((req) => {
+  const { userId, userName } = req.body;
+  SocketIOManager.getInstance().setNickName(userId, userName);
+  return { userName: SocketIOManager.getInstance().getUserName(userId) };
+}));
 
-router.post('/addComputer', (req: Request, res: Response) => {
-  const { roomId } = req.body;
-  try {
-    const socketIOManager = SocketIOManager.getInstance();
-    const players = roomManager.addComputer({ roomId });
-    socketIOManager.sendEvent(roomId, 'roomStatus', players)
-    res.json({ success: true, message: `Computer player added to room ${roomId}.` });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+router.post('/joinRoom', handle((req) => {
+  const { userId, roomId, password } = req.body;
+  const socketIOManager = SocketIOManager.getInstance();
+  const userName = requireUserName(socketIOManager, userId);
+  const id = String(roomId ?? '').trim();
+  // 一個玩家同時只能在一個房間
+  const current = roomManager.findRoomByPlayerId(userId);
+  if (current && current.id !== id) socketIOManager.leaveRoom(userId);
 
-router.post('/removeComputer', (req: Request, res: Response) => {
-  const { roomId } = req.body;
-  try {
-    const socketIOManager = SocketIOManager.getInstance();
-    const players = roomManager.removeComputer({ roomId });
-    socketIOManager.sendEvent(roomId, 'roomStatus', players)
-    res.json({ success: true, message: `Computer player removed from room ${roomId}.` });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+  const room = roomManager.joinRoom({ userId, userName, roomId: id, password });
+  socketIOManager.socketClientJoin(userId, room.id);
+  socketIOManager.sendRoomStatus(room);
+  return { roomId: room.id, people: room.number, enableLady: room.enableLady };
+}));
+
+router.post('/createRoom', handle((req) => {
+  const { userId, password, people, enableLady, roleImgPair } = req.body;
+  const socketIOManager = SocketIOManager.getInstance();
+  const userName = requireUserName(socketIOManager, userId);
+  socketIOManager.leaveRoom(userId);
+
+  const room = roomManager.createRoom({ userId, userName, password, people, enableLady, roleImgPair });
+  socketIOManager.socketClientJoin(userId, room.id);
+  socketIOManager.sendRoomStatus(room);
+  return { roomId: room.id, people: room.number, enableLady: room.enableLady };
+}));
+
+router.post('/addComputer', handle((req) => {
+  const { userId, roomId } = req.body;
+  const socketIOManager = SocketIOManager.getInstance();
+  socketIOManager.assertOwner(userId, roomId);
+  socketIOManager.sendRoomStatus(roomManager.addComputer({ roomId }));
+  return {};
+}));
+
+router.post('/removeComputer', handle((req) => {
+  const { userId, roomId } = req.body;
+  const socketIOManager = SocketIOManager.getInstance();
+  socketIOManager.assertOwner(userId, roomId);
+  socketIOManager.sendRoomStatus(roomManager.removeComputer({ roomId }));
+  return {};
+}));
 
 export default router;

@@ -1,77 +1,66 @@
+import { useEffect, useState } from 'react'
 import Frame from '../component/Frame'
+import BackButton from '../component/BackButton'
 import Title from '../component/Title'
 import Button from '../component/Button'
 import { useForm, FormProvider } from 'react-hook-form'
 import { InputText } from '../component/Input'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { useEffect } from 'react'
-import axios from 'axios'
-import { useSelector } from 'react-redux'
-import { origin } from '../config/setting'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
 import Background from '../component/Background'
+import { post } from '../utils/api'
 
 const JoinRoomFront = () => {
   const methods = useForm()
-  const socketId = useSelector((state) => state.socket.socketId)
   const location = useLocation()
   const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const username = location.state?.username
+  const [errorMsg, setErrorMsg] = useState('')
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    // 檢查username是否為空
-    if (location.state.username === '') {
-      navigate('/Login')
-    }
-  }, [location.state.username, navigate])
+    dispatch({ type: 'leaveRoom' })
+  }, [dispatch])
 
-  const handleJoinRoom = (data) => {
-    const username = data.RoomNumber
-    const password = 'username'
-    axios
-      .post(`${origin}/joinRoom`, {
-        userID: socketId,
-        userId: socketId,
-        userName: location.state.username,
-        roomId: username,
-        password: password
+  if (!username) return <Navigate to="/Login" replace />
+
+  const handleJoinRoom = async (data) => {
+    if (loading) return
+    setLoading(true)
+    setErrorMsg('')
+    try {
+      const res = await post('/joinRoom', { roomId: data.RoomNumber.trim() })
+      navigate(`/Room/${res.roomId}`, {
+        state: { username, roomId: res.roomId, people: res.people, enableLady: res.enableLady }
       })
-      .then((res) => {
-        if (res.data.success) {
-          navigate(`/Room/${username}`, {
-            state: {
-              username: location.state.username,
-              roomId: username
-            }
-          })
-        }
-      })
-      .catch((error) => {
-        alert(error.response.data)
-        console.log(error)
-      })
+    } catch (error) {
+      setErrorMsg(error.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const joinRoom = methods.handleSubmit((data) => handleJoinRoom(data))
+  const joinRoom = methods.handleSubmit(handleJoinRoom)
 
   return (
     <Background>
+      <BackButton to="/Login" />
       <Frame className="text-White">
         <Title>加入房間</Title>
         <FormProvider {...methods}>
-          <form>
-            <div className="flex flex-col gap-10">
-              <InputText
-                label="房間號碼"
-                name="RoomNumber"
-                validation={{ required: { value: true, message: '此欄必填' } }}
-              />
-              <InputText
-                label="房間密碼"
-                name="RoomPassword"
-                validation={{ required: { value: true, message: '此欄必填' } }}
-              />
-            </div>
+          <form onSubmit={joinRoom}>
+            <InputText
+              label="房間號碼"
+              name="RoomNumber"
+              inputMode="numeric"
+              validation={{ required: { value: true, message: '此欄必填' } }}
+            />
+            {errorMsg && <p className="text-red-600 text-sm mt-2">{errorMsg}</p>}
             <div className="flex flex-row gap-3 mt-4">
-              <Button onClick={joinRoom}>確認</Button>
+              <Button type="submit" disabled={loading}>
+                確認
+              </Button>
             </div>
           </form>
         </FormProvider>
