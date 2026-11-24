@@ -54,7 +54,7 @@ const LoginFront = () => {
 
   return (
     <Background>
-      <img src={AvalonLogo} alt="AvalonLogo" className="w-80" />
+      <img src={AvalonLogo} alt="AvalonLogo" className="w-60 md:w-80" />
       <Frame className="text-White">
         <Title>輸入姓名</Title>
         <FormProvider {...methods}>

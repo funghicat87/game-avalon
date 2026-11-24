@@ -137,7 +137,7 @@ const CreateRoomInput = ({ onCardClick, characterBlue, characterRed, formData, o
       <Title>創建房間</Title>
       <FormProvider {...methods}>
         <form>
-          <div className="flex flex-col gap-10">
+          <div className="flex flex-col gap-8 md:gap-10">
             <InputNumberRadio
               label="玩家人數"
               name="PlayerNumber"
@@ -163,13 +163,13 @@ const CreateRoomInput = ({ onCardClick, characterBlue, characterRed, formData, o
                 />
               </div>
               <div className="mt-3 flex flex-col gap-2">
-                <div className="flex gap-1 ">
+                <div className="flex flex-wrap gap-1">
                   {roleBlue.map((role, index) => (
                     <SmallCard
                       key={index}
                       cardImg={RoleImageMappingTable[role]}
                       alt="card"
-                      className={`w-14 cursor-pointer ${isCustomPool ? 'hover:opacity-80' : ''} `}
+                      className={`w-11 sm:w-14 cursor-pointer ${isCustomPool ? 'hover:opacity-80' : ''} `}
                       onClick={handleCardClick}
                       userName={RoleIntroduction[role].showName}
                       Introduction={RoleIntroduction[role].Introduction}
@@ -177,13 +177,13 @@ const CreateRoomInput = ({ onCardClick, characterBlue, characterRed, formData, o
                     />
                   ))}
                 </div>
-                <div className="flex gap-1">
+                <div className="flex flex-wrap gap-1">
                   {roleRed.map((role, index) => (
                     <SmallCard
                       key={index}
                       cardImg={RoleImageMappingTable[role]}
                       alt="card"
-                      className={`w-14 cursor-pointer ${isCustomPool ? 'hover:opacity-80' : ''} `}
+                      className={`w-11 sm:w-14 cursor-pointer ${isCustomPool ? 'hover:opacity-80' : ''} `}
                       onClick={handleCardClick}
                       userName={RoleIntroduction[role].showName}
                       Introduction={RoleIntroduction[role].Introduction}

@@ -5,12 +5,12 @@ import Button from '../Button'
 
 const GameBoardFrameA = ({ title, content, onClick, errorMsg }) => {
   return (
-    <div className="absolute z-50 top-1/2 -translate-y-1/2">
-      <Frame width="w-[900px]">
+    <div className="fixed inset-x-0 top-1/2 -translate-y-1/2 z-50 flex justify-center px-4 lg:absolute lg:inset-x-auto lg:px-0">
+      <Frame width="w-full lg:w-[900px]">
         <Title mb="mb-2">{title}</Title>
-        <div className="flex justify-center gap-3">
+        <div className="flex flex-wrap justify-center gap-3">
           {content.map((content, index) => (
-            <img key={index} src={content} alt={`Image ${index + 1}`} className="w-20 h-20" />
+            <img key={index} src={content} alt={`Image ${index + 1}`} className="w-14 h-14 md:w-20 md:h-20" />
           ))}
         </div>
         {errorMsg && <p className="text-red-500 text-center mt-2">{errorMsg}</p>}

@@ -66,11 +66,11 @@ const GameBoardFrameB = ({ content, roomId, name, status, validation, isBlueSide
   }
 
   return (
-    <div className="absolute z-50 top-1/2 -translate-y-1/2">
-      <Frame width="w-[600px]">
+    <div className="fixed inset-x-0 top-1/2 -translate-y-1/2 z-50 flex justify-center px-4 lg:absolute lg:inset-x-auto lg:px-0">
+      <Frame width="w-full md:w-[600px]">
         <FormProvider {...methods}>
           <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="flex justify-center gap-3">
+            <div className="flex flex-wrap justify-center gap-3">
               {image1 && (
                 <label htmlFor="image1">
                   <input
@@ -83,7 +83,7 @@ const GameBoardFrameB = ({ content, roomId, name, status, validation, isBlueSide
                     defaultChecked={isBlueSide}
                   />
                   <div
-                    className={`w-30 h-30 borderGradientFrame border-[1.8px] bg-black peer-checked:drop-shadow-[0_0px_5px_White]`}
+                    className={`max-w-[35vw] borderGradientFrame border-[1.8px] bg-black peer-checked:drop-shadow-[0_0px_5px_White]`}
                   >
                     <img src={image1} alt="Option 1" className="w-full h-full" />
                   </div>
@@ -101,7 +101,7 @@ const GameBoardFrameB = ({ content, roomId, name, status, validation, isBlueSide
                     disabled={isBlueSide}
                   />
                   <div
-                    className={`w-30 h-30 borderGradientFrame border-[1.8px] bg-black peer-checked:drop-shadow-[0_0px_5px_White]`}
+                    className={`max-w-[35vw] borderGradientFrame border-[1.8px] bg-black peer-checked:drop-shadow-[0_0px_5px_White]`}
                   >
                     <img src={image2} alt="Option 2" className="w-full h-full" />
                   </div>

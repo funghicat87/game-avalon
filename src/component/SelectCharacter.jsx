@@ -58,9 +58,9 @@ const SelectCharacter = ({ onClickButton }) => {
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Title>選擇角色</Title>
-        <div className="flex w-96">
+        <div className="flex w-full md:w-96">
           {CharacterBlue.map((character, index) => (
-            <label htmlFor={character} key={index}>
+            <label htmlFor={character} key={index} className="flex-1 min-w-0">
               <input
                 name="CharacterBlue"
                 type="checkbox"
@@ -94,9 +94,9 @@ const SelectCharacter = ({ onClickButton }) => {
             </label>
           ))}
         </div>
-        <div className="flex w-96">
+        <div className="flex w-full md:w-96">
           {CharacterRed.map((character, index) => (
-            <label htmlFor={character} key={index}>
+            <label htmlFor={character} key={index} className="flex-1 min-w-0">
               <input
                 name="CharacterRed"
                 type="checkbox"

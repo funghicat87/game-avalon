@@ -252,7 +252,7 @@ const RoomFront = () => {
         <SettingArea roomId={roomId} players={players} state={location.state} />
       )}
 
-      <div className="flex flex-row items-center justify-center gap-2">
+      <div className="flex flex-col-reverse lg:flex-row items-center justify-center gap-2 w-full lg:w-auto">
         <Chat roomId={roomId} userName={userName} />
         <Card
           userName={me.name}

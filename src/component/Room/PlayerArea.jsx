@@ -27,7 +27,7 @@ const PlayerArea = ({ players, userName, currentStatus }) => {
   }
 
   return (
-    <div className="flex flex-row w-[950px] flex-wrap-reverse items-center justify-center gap-3">
+    <div className="flex flex-row w-full lg:w-[950px] flex-wrap-reverse items-center justify-center gap-2 lg:gap-3">
       {players
         .filter((player) => player.name !== userName)
         .map((player, index) => {

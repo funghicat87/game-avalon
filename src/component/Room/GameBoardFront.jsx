@@ -58,7 +58,7 @@ const GameBoardFront = ({ children, gameboard }) => {
   }, [gameboard])
 
   return (
-    <div className="relative flex flex-col justify-center items-center h-[300px]">
+    <div className="relative flex flex-col justify-center items-center gap-1 lg:gap-0 py-2 lg:py-0 lg:h-[300px]">
       <GameFlow stage={staege} />
       <TaskArea tasks={tasksData} />
       <VoteRecordArea records={records} />

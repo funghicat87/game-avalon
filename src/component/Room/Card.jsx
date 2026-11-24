@@ -33,50 +33,50 @@ const Card = ({
     }
   }
   return (
-    <div className="flex relative w-[180px] items-center justify-center bg-Black/[0.7]" onClick={onClick}>
+    <div className="flex relative w-[120px] lg:w-[180px] items-center justify-center bg-Black/[0.7]" onClick={onClick}>
       <img src={cardImg} alt="cardimg" className="h-full object-contain" />
-      <div className="text-White absolute bottom-4 tracking-widest">{userName}</div>
-      <div className="flex flex-col absolute top-8 right-8">
+      <div className="text-White absolute bottom-2 lg:bottom-4 text-sm lg:text-base tracking-widest">{userName}</div>
+      <div className="flex flex-col absolute top-4 right-4 lg:top-8 lg:right-8">
         {selected && (
           <img
             src={getStatusIcon(currentStatus)}
             alt="selected"
-            className="w-8 h-8 object-contain opacity-80 hover:opacity-100 transition-opacity duration-200"
+            className="w-5 h-5 lg:w-8 lg:h-8 object-contain opacity-80 hover:opacity-100 transition-opacity duration-200"
           />
         )}
         {hasLady && (
           <img
             src={cardIconDrip}
             alt="hasLady"
-            className="w-8 h-8 object-contain opacity-80 hover:opacity-100 transition-opacity duration-200"
+            className="w-5 h-5 lg:w-8 lg:h-8 object-contain opacity-80 hover:opacity-100 transition-opacity duration-200"
           />
         )}
         {hadLady && (
           <img
             src={cardIconNodrip}
             alt="hadLady"
-            className="w-8 h-8 object-contain opacity-80 hover:opacity-100 transition-opacity duration-200"
+            className="w-5 h-5 lg:w-8 lg:h-8 object-contain opacity-80 hover:opacity-100 transition-opacity duration-200"
           />
         )}
         {isLeader && (
           <img
             src={cardIconCrowm}
             alt="isLeader"
-            className="w-8 h-8 object-contain opacity-80 hover:opacity-100 transition-opacity duration-200"
+            className="w-5 h-5 lg:w-8 lg:h-8 object-contain opacity-80 hover:opacity-100 transition-opacity duration-200"
           />
         )}
         {isTeamMember && (
           <img
             src={cardIconShield}
             alt="isTeamMember"
-            className="w-8 h-8 object-contain opacity-80 hover:opacity-100 transition-opacity duration-200"
+            className="w-5 h-5 lg:w-8 lg:h-8 object-contain opacity-80 hover:opacity-100 transition-opacity duration-200"
           />
         )}
       </div>
       <img
         src={center}
         alt="centetPicture"
-        className={`absolute w-28 h-28 top-10 left-1/2 -translate-x-1/2 ${center === null ? 'hidden' : ''}`}
+        className={`absolute w-16 h-16 top-6 lg:w-28 lg:h-28 lg:top-10 left-1/2 -translate-x-1/2 ${center === null ? 'hidden' : ''}`}
       />
     </div>
   )
@@ -125,7 +125,7 @@ const SmallCard = ({ userName, cardImg, onClick, className, Introduction, onEnla
       </div>
       {isEnlarged && (
         <div className="fixed inset-0 flex items-center justify-center bg-Black/80 z-50">
-          <div className="relative w-[250px]">
+          <div className="relative w-[250px] max-w-[80vw]">
             <div>
               {isBack ? (
                 <div className="bg-Black/80">

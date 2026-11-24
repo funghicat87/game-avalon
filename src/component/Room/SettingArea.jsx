@@ -58,7 +58,7 @@ const SettingArea = ({ roomId, players, state }) => {
 
   return (
     <FormProvider {...methods}>
-      <div className="text-White flex gap-36">
+      <div className="text-White flex justify-center gap-36 w-full lg:w-auto">
         {/* <div className="flex flex-col gap-10">
           <InputNumberRadio label="玩家人數" name="PlayerNumber" />
           <InputCheckbox label="湖中女神" name="LadyLake" />
@@ -94,7 +94,7 @@ const SettingArea = ({ roomId, players, state }) => {
             </div>
           </div>
         </div> */}
-        <div className="flex flex-row w-96 justify-end items-end w-28 gap-2 ">
+        <div className="flex flex-row w-full max-w-96 lg:w-96 justify-end items-end gap-2 ">
           {changeSetting || (
             <>
               {/* <Button mt="mt-0" onClick={handleChangeSetting}>

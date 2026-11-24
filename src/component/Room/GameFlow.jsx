@@ -3,8 +3,8 @@ import GameFlowImg from '../../assets/gameboard/GameFlow.webp'
 
 const GameFlowStart = ({ content, className }) => {
   return (
-    <div className={`relative h-8 w-[250px] flex items-center justify-center ${className} `}>
-      <span className="text-White z-10 tracking-[0.75em]">{content}</span>
+    <div className={`relative h-6 sm:h-7 lg:h-8 w-[88px] sm:w-[160px] lg:w-[250px] flex items-center justify-center ${className} `}>
+      <span className="text-White z-10 whitespace-nowrap text-[10px] sm:text-sm lg:text-base tracking-normal sm:tracking-[0.4em] lg:tracking-[0.75em]">{content}</span>
       <img src={GameFlowStartImg} alt="GameFlowStartImg" className="w-full absolute top-0 z-0 h-full" />
     </div>
   )
@@ -12,8 +12,8 @@ const GameFlowStart = ({ content, className }) => {
 
 const GameFlowBody = ({ content, className }) => {
   return (
-    <div className={`relative h-8 w-[250px] flex items-center justify-center -ml-5 ${className} `}>
-      <span className="text-White z-10 tracking-[0.75em] ml-6 ">{content}</span>
+    <div className={`relative h-6 sm:h-7 lg:h-8 w-[88px] sm:w-[160px] lg:w-[250px] flex items-center justify-center -ml-2 sm:-ml-3 lg:-ml-5 ${className} `}>
+      <span className="text-White z-10 whitespace-nowrap text-[10px] sm:text-sm lg:text-base tracking-normal sm:tracking-[0.4em] lg:tracking-[0.75em] ml-2 sm:ml-4 lg:ml-6 ">{content}</span>
       <img src={GameFlowImg} alt="GameFlowStartImg" className="w-full absolute top-0 z-0 h-full" />
     </div>
   )
